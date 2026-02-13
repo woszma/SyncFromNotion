@@ -152,8 +152,8 @@
     </div>
     
     <div class="flex gap-8 mt-4">
-      <button id="btn-back-2" class="secondary">上一步</button>
-      <button id="btn-sync" class="w-full">🚀 開始同步</button>
+      <button id="btn-back-2" class="secondary">⬅️ 重新選擇 Component</button>
+      <button id="btn-sync" class="w-full">🚀 開始同步 (Sync)</button>
     </div>
   </div>
 
@@ -208,57 +208,64 @@
     // --- Actions ---
 
     // Step 1: Fetch Data
-    btnFetch.onclick = async () => {
-      const url = webhookInput.value.trim();
-      if (!url) return setStatus('error', '請輸入 URL');
-      
-      setStatus('loading', '正在拉取數據...');
-      btnFetch.disabled = true;
+    
+    async function fetchData() {
+       const url = webhookInput.value.trim();
+       if (!url) {
+         setStatus('error', '請輸入 URL');
+         return false;
+       }
+       
+       setStatus('loading', '正在拉取數據...');
+       btnFetch.disabled = true;
 
-      try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        let data = await resp.json();
-        
-        // Smart extract array
-        if (!Array.isArray(data)) {
-          const extracted = extractArray(data);
-          if (extracted) {
-            data = extracted;
-          } else {
-            // Show preview of data to help debugging
-            const preview = JSON.stringify(data).substring(0, 100);
-            throw new Error(`未找到數據陣列。收到: ${preview}...`);
-          }
-        }
+       try {
+         const resp = await fetch(url);
+         if (!resp.ok) throw new Error('HTTP ' + resp.status);
+         let data = await resp.json();
+         
+         // Smart extract array
+         if (!Array.isArray(data)) {
+           const extracted = extractArray(data);
+           if (extracted) {
+             data = extracted;
+           } else {
+             const preview = JSON.stringify(data).substring(0, 100);
+             throw new Error(`未找到數據陣列。收到: ${preview}...`);
+           }
+         }
 
-        if (data.length === 0) throw new Error('陣列為空 (0 items)');
+         if (data.length === 0) throw new Error('陣列為空 (0 items)');
 
-        notionData = data;
-        // Extract all unique keys from first few records
-        const allKeys = new Set();
-        data.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
-        schemaKeys = Array.from(allKeys);
+         // 差異對比 (Smart logic)
+         const creatingCount = data.length;
+         // TODO: Check existing IDs if possible, but for now just show count
+         
+         notionData = data;
+         // Extract all unique keys from first few records
+         const allKeys = new Set();
+         data.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+         schemaKeys = Array.from(allKeys);
 
-        setStatus('success', `成功獲取 ${data.length} 筆數據`);
-        
-        // Save to cache
-        try {
-          localStorage.setItem('cached_data', JSON.stringify(data));
-        } catch (e) {
-          console.warn('Failed to save to cache', e);
-        }
+         setStatus('success', `成功獲取 ${data.length} 筆數據`);
+         
+         // Save to cache (Async)
+         saveStorage('cached_data', JSON.stringify(data));
 
-        // Render Preview
-        renderPreview(data[0]);
-        showStep('preview');
+         // Render Preview
+         renderPreview(data[0]);
+         showStep('preview');
+         return true;
 
-      } catch (e) {
-        setStatus('error', '失敗: ' + e.message);
-      } finally {
-        btnFetch.disabled = false;
-      }
-    };
+       } catch (e) {
+         setStatus('error', '失敗: ' + e.message);
+         return false;
+       } finally {
+         btnFetch.disabled = false;
+       }
+    }
+
+    btnFetch.onclick = fetchData;
 
     // Step 1.5 Preview Actions
     const btnPreviewRefresh = document.getElementById('btn-preview-refresh');
@@ -505,6 +512,10 @@
             console.log('Enabling Sync button manually from code');
             btnSync.removeAttribute('disabled'); // Ensure attribute is gone
             btnSync.disabled = false;
+            
+            // Try to load saved mappings for this component
+            setStatus('loading', '正在讀取儲存的映射設定...');
+            loadStorage('mapping_' + currentComponentId);
           }
           showStep(3);
         }
@@ -515,7 +526,7 @@
           setStatus('error', msg.message);
           btnSync.disabled = false;
         }
-        if (msg.type === 'done') {
+        else if (msg.type === 'done') {
           // Check if we need to sync images
           const imageMappings = currentMappings.filter(m => m.dataType !== 'text');
           
@@ -526,6 +537,37 @@
             setStatus('success', msg.message);
             btnSync.disabled = false;
           }
+          showSyncAgain(); // Show "Sync Again" button
+        }
+        else if (msg.type === 'storage-data') {
+          if (msg.key === 'webhook_url' && msg.value) {
+            webhookInput.value = msg.value;
+            // Auto-fetch if URL exists
+            if (!notionData.length) setTimeout(() => btnFetch.click(), 500);
+          }
+          
+          if (msg.key === 'cached_data' && msg.value) {
+            try {
+              const parsed = JSON.parse(msg.value);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                 notionData = parsed;
+                 const allKeys = new Set();
+                 parsed.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+                 schemaKeys = Array.from(allKeys);
+                 renderPreview(parsed[0]);
+                 showStep('preview');
+                 setStatus('success', `已載入緩存數據 (${parsed.length} 筆)`);
+              }
+            } catch (e) {
+              console.warn('Failed to parse cached data from storage', e);
+            }
+          }
+
+          if (msg.key === `mapping_${currentComponentId}` && msg.value) {
+            console.log('Loaded saved mappings:', msg.value);
+            renderMappingUI(componentLayers, msg.value);
+            setStatus('success', '已自動套用上次的映射設定');
+          }
         }
       } catch (err) {
         console.error('Window onmessage error:', err);
@@ -534,7 +576,7 @@
     };
 
     // Refactored renderMappingUI for safety
-    function renderMappingUI(layers) {
+    function renderMappingUI(layers, savedMappings = null) {
       mappingList.innerHTML = '';
       
       // Populate ID Select
@@ -544,6 +586,10 @@
         opt.value = key;
         opt.textContent = key;
         if (key.toLowerCase() === 'id') opt.selected = true;
+        // Restore ID selection if saved
+        if (savedMappings && savedMappings.idField && key === savedMappings.idField) {
+           opt.selected = true;
+        }
         idFieldSelect.appendChild(opt);
       });
 
@@ -575,11 +621,21 @@
 
         // Auto-match logic
         let selectedField = '__ignore__'; 
-        const cleanName = layer.name.replace(/^#/, '');
-        if (schemaKeys.includes(layer.name)) {
-           selectedField = layer.name;
-        } else if (schemaKeys.includes(cleanName)) {
-           selectedField = cleanName;
+        
+        // 1. Try saved mapping first
+        if (savedMappings && Array.isArray(savedMappings.mappings)) {
+           const found = savedMappings.mappings.find(m => m.layerName === layer.name);
+           if (found) selectedField = found.dataField;
+        } 
+        
+        // 2. If no saved mapping, try auto-match
+        if (selectedField === '__ignore__') {
+            const cleanName = layer.name.replace(/^#/, '');
+            if (schemaKeys.includes(layer.name)) {
+               selectedField = layer.name;
+            } else if (schemaKeys.includes(cleanName)) {
+               selectedField = cleanName;
+            }
         }
 
         // Add Schema Options
@@ -636,6 +692,16 @@
         const idField = idFieldSelect.value;
         console.log('ID Field:', idField);
 
+        // Save Mappings for future use
+        saveStorage('mapping_' + currentComponentId, { 
+           mappings: mappings, 
+           idField: idField 
+        });
+
+        // Hide Sync Again button if visible from previous run
+        const btnAgain = document.getElementById('btn-sync-again');
+        if (btnAgain) btnAgain.classList.add('hidden');
+
         parent.postMessage({ 
           pluginMessage: { 
             type: 'sync-mapped-data',
@@ -653,49 +719,54 @@
         setStatus('error', '同步按鈕錯誤: ' + e.message);
       }
     };
+    
+    // Create Sync Again Button dynamically
+    const btnSyncAgain = document.createElement('button');
+    btnSyncAgain.id = 'btn-sync-again';
+    btnSyncAgain.className = 'w-full hidden'; // Initially hidden
+    btnSyncAgain.style.marginTop = '8px';
+    btnSyncAgain.style.background = '#4CAF50';
+    btnSyncAgain.textContent = '🔄 再次同步 (Fetch & Sync)';
+    btnSyncAgain.onclick = async () => {
+       setStatus('loading', '正在重新拉取數據...');
+       const success = await fetchData();
+       if (success) {
+          // Data refreshed, notionData updated.
+          // Trigger Sync immediately
+          setTimeout(() => btnSync.click(), 500);
+       }
+    };
+    // Append to Step 3 container
+    document.getElementById('step-3').appendChild(btnSyncAgain);
 
-    // --- Init ---
+    function showSyncAgain() {
+       btnSyncAgain.classList.remove('hidden');
+    }
+
+    // --- Storage Helpers (Phase 2 & 3) ---
+    function saveStorage(key, value) {
+      // Save to Figma ClientStorage (Async, Persistent)
+      // Removed localStorage to avoid SecurityError in some environments
+      parent.postMessage({ pluginMessage: { type: 'storage-set', key, value } }, '*');
+    }
+
+    function loadStorage(key) {
+      parent.postMessage({ pluginMessage: { type: 'storage-get', key } }, '*');
+    }
+
     // --- Init ---
     try {
-      const savedUrl = localStorage.getItem('webhook_url');
-      if (savedUrl) webhookInput.value = savedUrl;
-      
-      const savedData = localStorage.getItem('cached_data');
-      if (savedData) {
-        try {
-          const parsed = JSON.parse(savedData);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            notionData = parsed;
-            const allKeys = new Set();
-            parsed.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
-            schemaKeys = Array.from(allKeys);
-            renderPreview(parsed[0]);
-            showStep('preview');
-            setStatus('success', `已載入緩存數據 (${parsed.length} 筆)`);
-          }
-        } catch (e) {
-          console.warn('Failed to parse cached data', e);
-        }
-      }
-
-      // Auto-fetch if URL exists
-      if (savedUrl) {
-         // Use a small timeout to allow UI to settle and user to see what's happening
-         setTimeout(() => {
-           btnFetch.click();
-         }, 500);
-      }
+      // Request ClientStorage (Persistent)
+      loadStorage('webhook_url');
+      loadStorage('cached_data');
 
     } catch (e) {
-      console.warn('LocalStorage not available', e);
+      console.warn('Init Error', e);
     }
 
     webhookInput.onchange = () => {
-      try {
-        localStorage.setItem('webhook_url', webhookInput.value);
-      } catch (e) {}
+      saveStorage('webhook_url', webhookInput.value);
     };
-
   </script>
 </body>
 </html>
