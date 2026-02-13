@@ -1,0 +1,19 @@
+{
+  "name": "SyncFromNotion",
+  "id": "1604163936048269493",
+  "api": "1.0.0",
+  "main": "code.js",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "figma"
+  ],
+  "ui": "ui.html",
+  "networkAccess": {
+    "allowedDomains": [
+      "*"
+    ],
+    "reasoning": "需要訪問用戶指定的 Make.com Webhook URL 以獲取 Notion 數據，以及下載 Notion 中的圖片資源。由於 Webhook URL 和圖片 URL 的域名不固定，因此需要通配符權限。"
+  }
+}

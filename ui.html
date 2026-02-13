@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SyncFromNotion</title>
+  <style>
+    /* Reset & Base */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #2c2c2c;
+      color: #fff;
+      font-size: 11px;
+      padding: 16px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Helper Classes */
+    .hidden { display: none !important; }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .gap-8 { gap: 8px; }
+    .gap-4 { gap: 4px; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .w-full { width: 100%; }
+    .mb-8 { margin-bottom: 8px; }
+    .mb-16 { margin-bottom: 16px; }
+
+    /* Component Styles */
+    h2 { font-size: 13px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    h2::before { content: '🔄'; font-size: 12px; }
+    
+    label { color: #b3b3b3; margin-bottom: 4px; display: block; }
+    
+    input, select {
+      background: #3c3c3c;
+      border: 1px solid #3c3c3c;
+      color: #fff;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      width: 100%;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: #18a0fb; }
+    input::placeholder { color: #888; }
+    
+    /* Buttons */
+    button {
+      background: #18a0fb;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 11px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #0d8ce0; }
+    button:disabled { background: #555; cursor: not-allowed; color: #aaa; }
+    button.secondary { background: transparent; border: 1px solid #555; color: #ccc; }
+    button.secondary:hover { border-color: #888; color: #fff; }
+
+    /* Steps */
+    .step-container { flex: 1; overflow-y: auto; padding-right: 2px; }
+    .step-header { font-weight: 600; color: #fff; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #444; }
+    
+    /* Mapping List */
+    .mapping-item {
+      background: #333;
+      padding: 8px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+      border: 1px solid #444;
+    }
+    .layer-info { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .layer-icon { font-size: 10px; color: #888; }
+    .layer-name { font-weight: 500; color: #ddd; }
+    .layer-type { font-size: 9px; background: #444; padding: 2px 4px; border-radius: 2px; color: #aaa; }
+
+    /* Status Bar */
+    .status-bar {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid #444;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 10px;
+      color: #999;
+    }
+    .spinner {
+      width: 10px; height: 10px;
+      border: 2px solid #555; border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+  </style>
+</head>
+<body>
+
+  <h2>SyncFromNotion v2</h2>
+
+  <div id="step-1" class="step-container">
+    <div class="step-header">Step 1: 獲取數據</div>
+    <div class="mb-16">
+      <label>Webhook URL</label>
+      <input type="text" id="webhook-url" placeholder="https://hook.us2.make.com/..." />
+    </div>
+    <button id="btn-fetch" class="w-full">📥 拉取數據</button>
+  </div>
+
+  <div id="step-preview" class="step-container hidden">
+    <div class="step-header">Step 1.5: 數據預覽</div>
+    <p class="mb-8" style="color:#aaa">確認欄位與內容是否正確 (顯示第1筆)</p>
+    <div id="preview-list" class="mb-16" style="max-height: 250px; overflow-y: auto; background: #222; padding: 8px; border: 1px solid #444; border-radius: 4px;">
+      <!-- Preview items -->
+    </div>
+    <div class="flex gap-8">
+      <button id="btn-preview-back" class="secondary">重新輸入 URL</button>
+      <button id="btn-preview-refresh" class="secondary">🔄 刷新</button>
+      <button id="btn-preview-next" class="w-full">下一步：選擇組件</button>
+    </div>
+  </div>
+
+  <div id="step-2" class="step-container hidden">
+    <div class="step-header">Step 2: 選擇組件</div>
+    <p class="mb-8" style="color:#aaa">請在 Figma 畫布上選中一個 Component，然後點擊下方按鈕。</p>
+    <div class="mb-16 p-2 bg-gray-800 rounded border border-gray-700 hidden" id="selected-comp-info" style="background:#222; padding:8px; border:1px solid #444;">
+      <div style="font-weight:bold" id="comp-name">--</div>
+    </div>
+    <button id="btn-read-selection" class="w-full secondary">🔍 讀取選中的 Component</button>
+  </div>
+
+  <div id="step-3" class="step-container hidden">
+    <div class="step-header">Step 3: 映射欄位</div>
+    
+    <div class="mb-16">
+      <label>唯一 ID 欄位 (識別用)</label>
+      <select id="id-field-select"></select>
+    </div>
+
+    <label class="mb-8">圖層對應關係</label>
+    <div id="mapping-list">
+      <!-- Mappings will be injected here -->
+    </div>
+    
+    <div class="flex gap-8 mt-4">
+      <button id="btn-back-2" class="secondary">上一步</button>
+      <button id="btn-sync" class="w-full">🚀 開始同步</button>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <div id="spinner" class="spinner hidden"></div>
+    <span id="status-text">就緒</span>
+  </div>
+
+  <script>
+    // --- State ---
+    let notionData = [];
+    let schemaKeys = [];
+    let componentLayers = [];
+    let currentComponentId = null;
+    let currentMappings = []; // [New] Store mappings for image sync phase
+
+    // --- Elements ---
+    const steps = {
+      1: document.getElementById('step-1'),
+      'preview': document.getElementById('step-preview'),
+      2: document.getElementById('step-2'),
+      3: document.getElementById('step-3')
+    };
+    const webhookInput = document.getElementById('webhook-url');
+    const btnFetch = document.getElementById('btn-fetch');
+    const btnPreviewNext = document.getElementById('btn-preview-next');
+    const btnPreviewBack = document.getElementById('btn-preview-back');
+    const previewList = document.getElementById('preview-list');
+    const btnReadSelection = document.getElementById('btn-read-selection');
+    const btnSync = document.getElementById('btn-sync');
+    const btnBack2 = document.getElementById('btn-back-2');
+    const mappingList = document.getElementById('mapping-list');
+    const idFieldSelect = document.getElementById('id-field-select');
+    const statusText = document.getElementById('status-text');
+    const spinner = document.getElementById('spinner');
+
+    // --- Helpers (Defined early) ---
+    function setStatus(type, msg) {
+      statusText.textContent = msg;
+      statusText.className = type;
+      spinner.classList.toggle('hidden', type !== 'loading');
+      if (type === 'error') statusText.style.color = '#ff4d4d';
+      else if (type === 'success') statusText.style.color = '#4dff88';
+      else statusText.style.color = '#999';
+    }
+
+    function showStep(n) {
+      Object.values(steps).forEach(el => el.classList.add('hidden'));
+      steps[n].classList.remove('hidden');
+    }
+
+    // --- Actions ---
+
+    // Step 1: Fetch Data
+    btnFetch.onclick = async () => {
+      const url = webhookInput.value.trim();
+      if (!url) return setStatus('error', '請輸入 URL');
+      
+      setStatus('loading', '正在拉取數據...');
+      btnFetch.disabled = true;
+
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        let data = await resp.json();
+        
+        // Smart extract array
+        if (!Array.isArray(data)) {
+          const extracted = extractArray(data);
+          if (extracted) {
+            data = extracted;
+          } else {
+            // Show preview of data to help debugging
+            const preview = JSON.stringify(data).substring(0, 100);
+            throw new Error(`未找到數據陣列。收到: ${preview}...`);
+          }
+        }
+
+        if (data.length === 0) throw new Error('陣列為空 (0 items)');
+
+        notionData = data;
+        // Extract all unique keys from first few records
+        const allKeys = new Set();
+        data.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+        schemaKeys = Array.from(allKeys);
+
+        setStatus('success', `成功獲取 ${data.length} 筆數據`);
+        
+        // Save to cache
+        try {
+          localStorage.setItem('cached_data', JSON.stringify(data));
+        } catch (e) {
+          console.warn('Failed to save to cache', e);
+        }
+
+        // Render Preview
+        renderPreview(data[0]);
+        showStep('preview');
+
+      } catch (e) {
+        setStatus('error', '失敗: ' + e.message);
+      } finally {
+        btnFetch.disabled = false;
+      }
+    };
+
+    // Step 1.5 Preview Actions
+    const btnPreviewRefresh = document.getElementById('btn-preview-refresh');
+    
+    btnPreviewNext.onclick = () => showStep(2);
+    btnPreviewBack.onclick = () => showStep(1);
+    btnPreviewRefresh.onclick = () => btnFetch.click();
+
+    // Step 2: Read Component
+    btnReadSelection.onclick = () => {
+      console.log('Sending get-component-layers message...');
+      parent.postMessage({ pluginMessage: { type: 'get-component-layers' } }, '*');
+      setStatus('loading', '正在讀取 Component...');
+    };
+
+    // Step 3 Back
+    btnBack2.onclick = () => showStep(2);
+
+    // ... existing code ...
+
+    function extractArray(obj) {
+      if (typeof obj !== 'object' || obj === null) return null;
+      
+      // 1. Try common keys
+      const keys = ['data', 'results', 'items', 'records', 'rows', 'list', 'entries', 'json', 'body'];
+      for (const k of keys) {
+        const val = obj[k];
+        if (Array.isArray(val)) return val;
+        // Handle stringified JSON (common in some webhooks)
+        if (typeof val === 'string') {
+          try {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed)) return parsed;
+          } catch {}
+        }
+      }
+      
+      // 2. Iterate all keys if strict common keys didn't work
+      for (const k of Object.keys(obj)) {
+        const val = obj[k];
+        if (Array.isArray(val)) return val;
+        if (typeof val === 'string') {
+          try {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed)) return parsed;
+          } catch {}
+        }
+      }
+      
+      return null;
+    }
+
+    function renderMappingUI(layers) {
+      mappingList.innerHTML = '';
+      
+      // Populate ID Select
+      idFieldSelect.innerHTML = '';
+      schemaKeys.forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = key;
+        if (key.toLowerCase() === 'id') opt.selected = true;
+        idFieldSelect.appendChild(opt);
+      });
+
+      // Populate Layer Mappings
+      layers.forEach(layer => {
+        const div = document.createElement('div');
+        div.className = 'mapping-item';
+        div.dataset.layer = layer.name;
+        div.dataset.type = layer.type;
+
+        let icon = layer.type === 'TEXT' ? 'T' : '🖼️';
+        
+        // Auto-match logic
+        let selectedField = '__ignore__'; // Initialize to ignore
+
+        // Try exact match or match without '#' prefix
+        const cleanName = layer.name.replace(/^#/, '');
+        if (schemaKeys.includes(layer.name)) {
+           selectedField = layer.name;
+        } else if (schemaKeys.includes(cleanName)) {
+           selectedField = cleanName;
+        }
+
+        const optionsHtml = schemaKeys.map(k => 
+          `<option value="${k}" ${k === selectedField ? 'selected' : ''}>${k}</option>`
+        ).join('');
+
+        div.innerHTML = `
+          <div class="layer-info">
+            <span class="layer-icon">${icon}</span>
+            <span class="layer-name">${layer.name}</span>
+            <span class="layer-type">${layer.type}</span>
+          </div>
+          <select data-dtype="${layer.type === 'TEXT' ? 'text' : 'image'}">
+            <option value="__ignore__">-- 忽略 --</option>
+            ${optionsHtml}
+          </select>
+        `;
+        mappingList.appendChild(div);
+      });
+    }
+
+    // Step 4: Sync
+    btnSync.onclick = () => {
+      console.log('點擊同步按鈕');
+      setStatus('loading', '準備同步...');
+      const mappings = [];
+      
+      const items = document.querySelectorAll('.mapping-item');
+      console.log(`找到 ${items.length} 個映射項目`);
+
+      items.forEach(item => {
+        const layerName = item.dataset.layer;
+        const layerType = item.dataset.type;
+        const select = item.querySelector('select');
+        const dataField = select.value;
+        
+        if (dataField && dataField !== '__ignore__') {
+          mappings.push({ layerName, dataField, dataType: layerType === 'RECTANGLE' || layerType === 'ELLIPSE' ? 'image' : 'text' });
+        }
+      });
+
+      console.log('生成的映射規則:', mappings);
+
+      if (mappings.length === 0) {
+        console.warn('映射規則為空');
+        return setStatus('error', '請至少設定一個映射欄位');
+      }
+
+      const idField = idFieldSelect.value;
+      console.log('ID Field:', idField);
+
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'sync-mapped-data',
+          componentId: currentComponentId,
+          data: notionData,
+          mappings,
+          idField
+        } 
+      }, '*');
+      
+      console.log('已發送 sync-mapped-data 訊息');
+      setStatus('loading', '正在同步數據... (請稍候)');
+    };
+
+    async function downloadAndSendImages(mappings) {
+      setStatus('loading', '正在下載圖片...');
+      let count = 0;
+      const total = notionData.length * mappings.length;
+
+      for (let i = 0; i < notionData.length; i++) {
+        const item = notionData[i];
+        // Must use the same ID logic as code.ts
+        const idValue = item[idFieldSelect.value] || `row-${i}`;
+
+        for (const m of mappings) {
+          const url = item[m.dataField];
+          if (typeof url === 'string' && url.startsWith('http')) {
+            try {
+              const resp = await fetch(url);
+              const buffer = await resp.arrayBuffer();
+              parent.postMessage({
+                pluginMessage: {
+                  type: 'set-image',
+                  notionId: String(idValue),
+                  layerName: m.layerName,
+                  imageBytes: new Uint8Array(buffer)
+                }
+              }, '*');
+            } catch (e) {
+              console.warn('Image fail', url);
+            }
+          }
+          count++;
+          if (count % 5 === 0) setStatus('loading', `處理圖片 ${count}/${total}...`);
+        }
+      }
+      setStatus('success', '同步完成！');
+      btnSync.disabled = false;
+    }
+
+    // --- Helpers ---
+    
+    function renderPreview(record) {
+      previewList.innerHTML = '';
+      schemaKeys.forEach(key => {
+        const div = document.createElement('div');
+        div.className = 'preview-item'; // Changed from mapping-item
+        div.style.display = 'flex';
+        div.style.justifyContent = 'space-between';
+        
+        const keySpan = document.createElement('span');
+        keySpan.style.fontWeight = 'bold';
+        keySpan.style.color = '#ddd';
+        keySpan.textContent = key;
+        
+        const valSpan = document.createElement('span');
+        valSpan.style.color = '#aaa';
+        valSpan.style.fontSize = '10px';
+        valSpan.style.maxWidth = '150px';
+        valSpan.style.overflow = 'hidden';
+        valSpan.style.textOverflow = 'ellipsis';
+        valSpan.style.whiteSpace = 'nowrap';
+        let val = record[key];
+        if (typeof val === 'object') val = JSON.stringify(val);
+        valSpan.textContent = String(val);
+
+        div.appendChild(keySpan);
+        div.appendChild(valSpan);
+        previewList.appendChild(div);
+      });
+    }
+
+    // --- Message Handler ---
+    window.onmessage = (event) => {
+      try {
+        const msg = event.data.pluginMessage;
+        console.log('Frontend received message:', msg);
+        if (!msg) return;
+
+        if (msg.type === 'component-layers') {
+          console.log('Processing component-layers...');
+          componentLayers = msg.layers;
+          currentComponentId = msg.componentId;
+          
+          try {
+            renderMappingUI(componentLayers);
+          } catch (e) {
+            console.error('Render UI Error:', e);
+            setStatus('error', '渲染介面失敗: ' + e.message);
+          }
+          
+          document.getElementById('comp-name').textContent = msg.componentName;
+          document.getElementById('selected-comp-info').classList.remove('hidden');
+          
+          if (componentLayers.length === 0) {
+            setStatus('error', '未找到名稱含 # 的圖層 (請檢查圖層名稱)');
+            btnSync.disabled = true;
+          } else {
+            setStatus('success', '已讀取 Component，請設定映射');
+            console.log('Enabling Sync button manually from code');
+            btnSync.removeAttribute('disabled'); // Ensure attribute is gone
+            btnSync.disabled = false;
+          }
+          showStep(3);
+        }
+        else if (msg.type === 'status') {
+          setStatus('loading', msg.message);
+        }
+        else if (msg.type === 'error') {
+          setStatus('error', msg.message);
+          btnSync.disabled = false;
+        }
+        if (msg.type === 'done') {
+          // Check if we need to sync images
+          const imageMappings = currentMappings.filter(m => m.dataType !== 'text');
+          
+          if (imageMappings.length > 0) {
+            setStatus('success', msg.message + ' (開始處理圖片...)');
+            downloadAndSendImages(imageMappings);
+          } else {
+            setStatus('success', msg.message);
+            btnSync.disabled = false;
+          }
+        }
+      } catch (err) {
+        console.error('Window onmessage error:', err);
+        setStatus('error', 'Plugin 錯誤: ' + err.message);
+      }
+    };
+
+    // Refactored renderMappingUI for safety
+    function renderMappingUI(layers) {
+      mappingList.innerHTML = '';
+      
+      // Populate ID Select
+      idFieldSelect.innerHTML = '';
+      schemaKeys.forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = key;
+        if (key.toLowerCase() === 'id') opt.selected = true;
+        idFieldSelect.appendChild(opt);
+      });
+
+      // Populate Layer Mappings
+      layers.forEach(layer => {
+        const div = document.createElement('div');
+        div.className = 'mapping-item';
+        div.dataset.layer = layer.name;
+        div.dataset.type = layer.type;
+
+        let icon = layer.type === 'TEXT' ? 'T' : '🖼️';
+        
+        const layerInfoComp = document.createElement('div');
+        layerInfoComp.className = 'layer-info';
+        layerInfoComp.innerHTML = `
+            <span class="layer-icon">${icon}</span>
+            <span class="layer-name" title="${layer.name}">${layer.name}</span>
+            <span class="layer-type">${layer.type}</span>
+        `;
+
+        const select = document.createElement('select');
+        select.dataset.dtype = layer.type === 'TEXT' ? 'text' : 'image';
+        
+        // Default Ignore Option
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '__ignore__';
+        defaultOpt.textContent = '-- 忽略 --';
+        select.appendChild(defaultOpt);
+
+        // Auto-match logic
+        let selectedField = '__ignore__'; 
+        const cleanName = layer.name.replace(/^#/, '');
+        if (schemaKeys.includes(layer.name)) {
+           selectedField = layer.name;
+        } else if (schemaKeys.includes(cleanName)) {
+           selectedField = cleanName;
+        }
+
+        // Add Schema Options
+        schemaKeys.forEach(k => {
+          const opt = document.createElement('option');
+          opt.value = k;
+          opt.textContent = k;
+          if (k === selectedField) opt.selected = true;
+          select.appendChild(opt);
+        });
+
+        div.appendChild(layerInfoComp);
+        div.appendChild(select);
+        mappingList.appendChild(div);
+      });
+    }
+
+    // Step 4: Sync
+    btnSync.onclick = () => {
+      try {
+        console.log('點擊同步按鈕 (Click triggered)');
+        setStatus('loading', '正在開始同步...'); // Immediate feedback
+        
+        const mappings = [];
+        // Only select from the mapping list to avoid preview items
+        const items = mappingList.querySelectorAll('.mapping-item');
+        console.log(`找到 ${items.length} 個映射項目`);
+
+        items.forEach(item => {
+          const layerName = item.dataset.layer;
+          const layerType = item.dataset.type;
+          const select = item.querySelector('select');
+          
+          if (!select) {
+            console.warn('Skipping item without select:', item);
+            return;
+          }
+          
+          const dataField = select.value;
+          
+          if (dataField && dataField !== '__ignore__') {
+            mappings.push({ layerName, dataField, dataType: layerType !== 'TEXT' ? 'image' : 'text' });
+          }
+        });
+
+        console.log('生成的映射規則:', mappings);
+        currentMappings = mappings; // Save mappings for image phase
+
+        if (mappings.length === 0) {
+          console.warn('映射規則為空');
+          return setStatus('error', '請至少設定一個映射欄位');
+        }
+
+        const idField = idFieldSelect.value;
+        console.log('ID Field:', idField);
+
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'sync-mapped-data',
+            componentId: currentComponentId,
+            data: notionData,
+            mappings,
+            idField
+          } 
+        }, '*');
+        
+        console.log('已發送 sync-mapped-data 訊息');
+        setStatus('loading', '正在同步數據... (請稍候)');
+      } catch (e) {
+        console.error('Sync Button Error:', e);
+        setStatus('error', '同步按鈕錯誤: ' + e.message);
+      }
+    };
+
+    // --- Init ---
+    // --- Init ---
+    try {
+      const savedUrl = localStorage.getItem('webhook_url');
+      if (savedUrl) webhookInput.value = savedUrl;
+      
+      const savedData = localStorage.getItem('cached_data');
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            notionData = parsed;
+            const allKeys = new Set();
+            parsed.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+            schemaKeys = Array.from(allKeys);
+            renderPreview(parsed[0]);
+            showStep('preview');
+            setStatus('success', `已載入緩存數據 (${parsed.length} 筆)`);
+          }
+        } catch (e) {
+          console.warn('Failed to parse cached data', e);
+        }
+      }
+
+      // Auto-fetch if URL exists
+      if (savedUrl) {
+         // Use a small timeout to allow UI to settle and user to see what's happening
+         setTimeout(() => {
+           btnFetch.click();
+         }, 500);
+      }
+
+    } catch (e) {
+      console.warn('LocalStorage not available', e);
+    }
+
+    webhookInput.onchange = () => {
+      try {
+        localStorage.setItem('webhook_url', webhookInput.value);
+      } catch (e) {}
+    };
+
+  </script>
+</body>
+</html>
