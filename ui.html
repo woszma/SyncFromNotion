@@ -101,11 +101,44 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* 进度日志区域 */
+    #progress-log {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 4px;
+      padding: 8px;
+      margin-top: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+    #progress-log.hidden {
+      display: none;
+    }
+    .log-entry {
+      color: #999;
+      padding: 2px 0;
+    }
+    .log-entry.success {
+      color: #4dff88;
+    }
+    .log-entry.info {
+      color: #4da6ff;
+    }
+    .log-entry.warning {
+      color: #ffb84d;
+    }
+    .log-entry.error {
+      color: #ff4d4d;
+    }
+
   </style>
 </head>
 <body>
 
-  <h2>SyncFromNotion <span id="version-display" style="font-size:10px; color:#888; font-weight:normal; margin-left:8px;">v1.1.2</span></h2>
+  <h2>SyncFromNotion <span id="version-display" style="font-size:10px; color:#888; font-weight:normal; margin-left:8px;">v1.2.0</span></h2>
 
   <div id="step-1" class="step-container">
     <div class="step-header">Step 1: 獲取數據</div>
@@ -130,11 +163,15 @@
   </div>
 
   <div id="step-2" class="step-container hidden">
-    <div class="step-header">Step 2: 選擇組件</div>
-    <p class="mb-8" style="color:#aaa">請在 Figma 畫布上選中一個 Component，然後點擊下方按鈕。</p>
+    <div class="step-header">Step 2: 選擇組件 (Component)</div>
+    
     <div class="mb-16 p-2 bg-gray-800 rounded border border-gray-700 hidden" id="selected-comp-info" style="background:#222; padding:8px; border:1px solid #444;">
-      <div style="font-weight:bold" id="comp-name">--</div>
+      <div style="font-weight:bold; margin-bottom:8px;" id="comp-name">--</div>
+      <button id="btn-use-saved-comp" class="w-full secondary" style="font-size:11px; padding:6px;">
+        ✅ 使用這個 Component
+      </button>
     </div>
+    
     <button id="btn-read-selection" class="w-full secondary">🔍 讀取選中的 Component</button>
   </div>
 
@@ -153,8 +190,77 @@
     
     <div class="flex gap-8 mt-4">
       <button id="btn-back-2" class="secondary">⬅️ 重新選擇 Component</button>
-      <button id="btn-sync" class="w-full">🚀 開始同步 (Sync)</button>
+      <button id="btn-confirm-mapping" class="w-full secondary">✅ 確認映射</button>
     </div>
+    
+    <button id="btn-sync" class="w-full" style="margin-top:8px;">🚀 開始同步 (Sync)</button>
+    
+    <button id="btn-show-tools" class="w-full secondary" style="margin-top:8px;">
+      🛠️ 工具：修改 Instance ID
+    </button>
+    
+    <!-- 进度日志显示区域 -->
+    <div id="progress-log" class="hidden"></div>
+  </div>
+
+  <div id="tools-section" class="step-container hidden">
+    <div class="step-header">🛠️ 工具</div>
+    
+    <!-- 快速配置加载 -->
+    <div style="margin-bottom:24px; padding-bottom:24px; border-bottom:1px solid #333;">
+      <h3 style="font-size:12px; margin-bottom:8px;">⚡ 快速配置</h3>
+      <p style="color:#aaa; margin-bottom:12px; font-size:10px;">选中一个 Instance，自动加载其 Component 和映射配置</p>
+      
+      <!-- 配置状态显示 -->
+      <div id="quick-config-status" class="hidden" style="background:#1a1a1a; border:1px solid #333; border-radius:4px; padding:8px; margin-bottom:12px;">
+        <div style="font-size:10px; color:#888; margin-bottom:4px;">当前配置:</div>
+        <div id="quick-config-component" style="font-size:11px; color:#4dff88; margin-bottom:2px;">Component: --</div>
+        <div id="quick-config-mappings" style="font-size:11px; color:#4da6ff;">映射: --</div>
+        <div id="quick-config-data" style="font-size:11px; color:#ffb84d; margin-top:2px;">数据: --</div>
+      </div>
+      
+      <button id="btn-quick-load" class="w-full secondary">
+        ⚡ 从选中 Instance 加载配置
+      </button>
+    </div>
+    
+    <!-- 同步选中的 Instance -->
+    <div style="margin-bottom:24px; padding-bottom:24px; border-bottom:1px solid #333;">
+      <h3 style="font-size:12px; margin-bottom:8px;">🔄 同步选中的 Instance</h3>
+      <p style="color:#aaa; margin-bottom:12px; font-size:10px;">只更新选中的 instance，不影响其他数据</p>
+      
+      <button id="btn-sync-selected" class="w-full" disabled>
+        🔄 同步选中的 Instance
+      </button>
+    </div>
+    
+    <!-- 修改 Instance ID -->
+    <div>
+      <h3 style="font-size:12px; margin-bottom:8px;">✏️ 修改 Instance ID</h3>
+      <p style="color:#aaa; margin-bottom:12px; font-size:10px;">选中一个 Instance，修改其 Notion ID</p>
+    
+    <button id="btn-read-instance-id" class="w-full secondary mb-8">
+      📍 读取选中 Instance 的 ID
+    </button>
+    
+    <div id="current-id-display" class="hidden" style="margin-bottom:12px; padding:8px; background:#222; border:1px solid #444; border-radius:4px;">
+      <div style="font-size:10px; color:#888; margin-bottom:4px;">当前 ID:</div>
+      <div id="current-id-value" style="font-family:monospace; color:#4dff88; font-size:11px;"></div>
+      <div id="current-node-name" style="font-size:10px; color:#888; margin-top:4px;"></div>
+    </div>
+    
+    <div class="mb-16">
+      <label>新的 Notion ID</label>
+      <input type="text" id="new-id-input" placeholder="输入新的 ID" />
+    </div>
+    
+    <button id="btn-update-instance-id" class="w-full" disabled>
+      💾 更新 ID
+    </button>
+    
+    <button id="btn-back-to-sync" class="w-full secondary" style="margin-top:8px;">
+      ⬅️ 返回同步
+    </button>
   </div>
 
   <div class="status-bar">
@@ -175,7 +281,8 @@
       1: document.getElementById('step-1'),
       'preview': document.getElementById('step-preview'),
       2: document.getElementById('step-2'),
-      3: document.getElementById('step-3')
+      3: document.getElementById('step-3'),
+      'tools': document.getElementById('tools-section')
     };
     const webhookInput = document.getElementById('webhook-url');
     const btnFetch = document.getElementById('btn-fetch');
@@ -183,13 +290,31 @@
     const btnPreviewBack = document.getElementById('btn-preview-back');
     const previewList = document.getElementById('preview-list');
     const btnReadSelection = document.getElementById('btn-read-selection');
+    const btnUseSavedComp = document.getElementById('btn-use-saved-comp');
     const btnSync = document.getElementById('btn-sync');
+    const btnConfirmMapping = document.getElementById('btn-confirm-mapping');
     const btnBack2 = document.getElementById('btn-back-2');
     const mappingList = document.getElementById('mapping-list');
     const idFieldSelect = document.getElementById('id-field-select');
     const statusText = document.getElementById('status-text');
     const spinner = document.getElementById('spinner');
+    
+    // Tools section elements
+    const btnSyncSelected = document.getElementById('btn-sync-selected');
+    const btnReadInstanceId = document.getElementById('btn-read-instance-id');
+    const btnUpdateInstanceId = document.getElementById('btn-update-instance-id');
+    const currentIdDisplay = document.getElementById('current-id-display');
+    const currentIdValue = document.getElementById('current-id-value');
+    const currentNodeName = document.getElementById('current-node-name');
+    const newIdInput = document.getElementById('new-id-input');
 
+    // Quick Config elements
+    const btnQuickLoad = document.getElementById('btn-quick-load');
+    const quickConfigStatus = document.getElementById('quick-config-status');
+    const quickConfigComponent = document.getElementById('quick-config-component');
+    const quickConfigMappings = document.getElementById('quick-config-mappings');
+    const quickConfigData = document.getElementById('quick-config-data');
+    
     // --- Helpers (Defined early) ---
     function setStatus(type, msg) {
       statusText.textContent = msg;
@@ -200,9 +325,75 @@
       else statusText.style.color = '#999';
     }
 
-    function showStep(n) {
-      Object.values(steps).forEach(el => el.classList.add('hidden'));
-      steps[n].classList.remove('hidden');
+    // 进度日志函数
+    const progressLog = document.getElementById('progress-log');
+    const MAX_LOG_ENTRIES = 50; // 最多保留50条日志
+    
+    function addLog(message, type = 'info') {
+      // 显示日志区域
+      progressLog.classList.remove('hidden');
+      
+      // 创建日志条目
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      
+      // 添加时间戳
+      const now = new Date();
+      const timestamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      entry.textContent = `[${timestamp}] ${message}`;
+      
+      // 添加到日志区域
+      progressLog.appendChild(entry);
+      
+      // 限制日志条目数量
+      while (progressLog.children.length > MAX_LOG_ENTRIES) {
+        progressLog.removeChild(progressLog.firstChild);
+      }
+      
+      // 自动滚动到底部
+      progressLog.scrollTop = progressLog.scrollHeight;
+    }
+    
+    function clearLog() {
+      progressLog.innerHTML = '';
+      progressLog.classList.add('hidden');
+    }
+
+
+    function showStep(step) {
+      Object.keys(steps).forEach(k => steps[k].classList.add('hidden'));
+      if (steps[step]) {
+        steps[step].classList.remove('hidden');
+      }
+      
+      // 当进入工具区时，检查是否有配置可用
+      if (step === 'tools') {
+        // 如果已有 component 和 mappings，启用同步选中按钮
+        if (currentComponentId && currentMappings && currentMappings.length > 0 && notionData && notionData.length > 0) {
+          if (btnSyncSelected) {
+            btnSyncSelected.disabled = false;
+          }
+          
+          // 更新状态显示
+          if (quickConfigStatus && !quickConfigStatus.classList.contains('hidden')) {
+            // 状态已显示，保持
+          } else {
+            // 尝试从 storage 加载并显示提示
+            loadStorage('last_component_id').then(savedId => {
+              if (savedId && selectedCompInfo) {
+                const compNameEl = document.getElementById('comp-name');
+                if (compNameEl && compNameEl.textContent !== '--') {
+                  // 在工具区提示可以使用快速加载
+                  setStatus('info', '提示：可以使用"从选中 Instance 加载配置"或已有配置直接同步');
+                }
+              }
+            });
+          }
+        } else {
+          // 无配置，显示提示
+          setStatus('info', '请先加载配置或完成 Step 1-3');
+        }
+      }
     }
 
     // --- Actions ---
@@ -280,9 +471,284 @@
       parent.postMessage({ pluginMessage: { type: 'get-component-layers' } }, '*');
       setStatus('loading', '正在讀取 Component...');
     };
+    
+    // Step 2: Use Saved Component
+    if (btnUseSavedComp) {
+      btnUseSavedComp.onclick = async () => {
+        setStatus('loading', '正在加载保存的 Component...');
+        
+        const savedComponentId = await loadStorage('last_component_id');
+        if (!savedComponentId) {
+          setStatus('error', '未找到保存的 Component');
+          return;
+        }
+        
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'restore-component',
+            componentId: savedComponentId
+          } 
+        }, '*');
+      };
+    }
 
     // Step 3 Back
     btnBack2.onclick = () => showStep(2);
+    
+    // Step 3: Confirm Mapping (保存映射配置)
+    if (btnConfirmMapping) {
+      btnConfirmMapping.onclick = async () => {
+        console.log('点击确认映射按钮');
+        
+        // 收集映射
+        const mappings = [];
+        const items = document.querySelectorAll('.mapping-item');
+        
+        items.forEach(item => {
+          const layerNameEl = item.querySelector('.layer-name');
+          const fieldSelect = item.querySelector('.field-select');
+          const typeSelect = item.querySelector('.type-select');
+          
+          // 添加 null 检查
+          if (!layerNameEl || !fieldSelect || !typeSelect) {
+            console.warn('映射项缺少必要元素', item);
+            return;
+          }
+          
+          if (fieldSelect.value) {
+            mappings.push({
+              layerName: layerNameEl.textContent,
+              notionField: fieldSelect.value,
+              dataType: typeSelect.value
+            });
+          }
+        });
+        
+        if (mappings.length === 0) {
+          setStatus('warning', '至少需要設置一個映射');
+          return;
+        }
+        
+        // 保存 ID 字段
+        const idField = idFieldSelect.value;
+        
+        // 保存映射配置（使用对象格式，与完整同步一致）
+        const mappingData = {
+          mappings: mappings,
+          idField: idField
+        };
+        
+        currentMappings = mappings;
+        await saveStorage('mapping_' + currentComponentId, mappingData);
+        
+        console.log('[确认映射] 保存映射配置:', mappingData);
+        
+        // 启用同步选中按钮（如果在工具区）
+        if (btnSyncSelected && notionData && notionData.length > 0) {
+          btnSyncSelected.disabled = false;
+        }
+        
+        setStatus('success', `✅ 映射已確認並保存 (${mappings.length} 條規則)`);
+        console.log('映射已保存:', mappings);
+        
+        // 可选：显示成功提示并提供选项
+        setTimeout(() => {
+          setStatus('success', '映射已保存！可以進入「工具」使用快速同步');
+        }, 1500);
+      };
+    }
+    
+    // Show Tools
+    const btnShowTools = document.getElementById('btn-show-tools');
+    if (btnShowTools) {
+      btnShowTools.onclick = () => showStep('tools');
+    }
+    
+    // Back to Sync from Tools
+    const btnBackToSync = document.getElementById('btn-back-to-sync');
+    if (btnBackToSync) {
+      btnBackToSync.onclick = () => showStep(3);
+    }
+    
+    // Quick Load Configuration
+    if (btnQuickLoad) {
+      btnQuickLoad.onclick = async () => {
+        try {
+          clearLog();
+          setStatus('loading', '正在加载配置...');
+          addLog('⚡ 从选中 Instance 加载配置', 'info');
+          
+          // 1. 检查 Notion 数据
+          if (!notionData || notionData.length === 0) {
+            setStatus('error', '请先拉取 Notion 数据');
+            addLog('❌ 未找到 Notion 数据，请先拉取', 'error');
+            return;
+          }
+          
+          // 2. 发送加载请求到后端（从选中的 instance 获取 component）
+          const loadResult = await new Promise((resolve) => {
+            const handler = (e) => {
+              const msg = e.data.pluginMessage;
+              if (msg && (msg.type === 'component-data' || msg.type === 'error')) {
+                window.removeEventListener('message', handler);
+                resolve(msg);
+              }
+            };
+            window.addEventListener('message', handler);
+            parent.postMessage({ 
+              pluginMessage: { 
+                type: 'load-from-selection'
+              } 
+            }, '*');
+            
+            // Timeout
+            setTimeout(() => {
+              window.removeEventListener('message', handler);
+              resolve({ type: 'error', message: '加载超时' });
+            }, 3000);
+          });
+          
+          if (loadResult.type === 'error') {
+            setStatus('error', loadResult.message);
+            addLog(`❌ ${loadResult.message}`, 'error');
+            return;
+          }
+          
+          addLog(`✅ 找到 Component: ${loadResult.componentName}`, 'success');
+          
+          // 3. 加载该 component 的映射配置
+          const savedData = await loadStorage('mapping_' + loadResult.componentId);
+          let mappings = [];
+          let idField = Object.keys(notionData[0] || {})[0];
+          
+          console.log('[快速加载] 尝试加载映射，key:', 'mapping_' + loadResult.componentId);
+          console.log('[快速加载] 读取到的映射数据:', savedData);
+          
+          if (savedData) {
+            // 处理对象格式 {mappings: [...], idField: '...'}
+            if (savedData.mappings && Array.isArray(savedData.mappings)) {
+              mappings = savedData.mappings;
+              idField = savedData.idField || idField;
+              console.log('[快速加载] 解析映射成功:', mappings);
+              addLog(`加载映射配置: ${mappings.length} 条规则`, 'success');
+            } else {
+              console.warn('[快速加载] 映射数据格式不正确', savedData);
+              addLog('⚠️ 映射配置格式错误', 'error');
+            }
+          } else {
+            console.warn('[快速加载] 未找到映射配置');
+            addLog('⚠️ 未找到保存的映射配置', 'warning');
+          }
+          
+          if (mappings.length === 0) {
+            addLog('提示：请先在 Step 3 设置并确认映射', 'info');
+          }
+          
+          // 4. 设置全局变量
+          currentComponentId = loadResult.componentId;
+          currentMappings = mappings;
+          componentLayers = loadResult.layers;
+
+          // 4.1 Update Mapping UI in background (so Step 3 is correct if visited)
+          try {
+            renderMappingUI(componentLayers);
+            const compNameEl = document.getElementById('comp-name');
+            if (compNameEl) compNameEl.textContent = loadResult.componentName;
+            const infoEl = document.getElementById('selected-comp-info');
+            if (infoEl) infoEl.classList.remove('hidden');
+          } catch (e) {
+            console.warn('Background UI update failed:', e);
+          }
+          
+          // 5. 更新状态显示
+          quickConfigStatus.classList.remove('hidden');
+          quickConfigComponent.textContent = `Component: ${loadResult.componentName}`;
+          quickConfigMappings.textContent = `映射: ${mappings.length} 条规则${mappings.length === 0 ? ' ⚠️' : ''}`;
+          quickConfigData.textContent = `数据: ${notionData.length} 条记录`;
+          
+          // 6. 启用同步选中按钮（如果有映射）
+          if (mappings.length > 0) {
+            btnSyncSelected.disabled = false;
+            setStatus('success', '配置加载成功！');
+            addLog('✅ 配置加载完成，可以使用"同步选中"功能', 'success');
+          } else {
+            btnSyncSelected.disabled = true;
+            setStatus('warning', 'Component 已加载，但未找到映射配置');
+            addLog('提示：请先完成 Step 1-3 创建映射配置', 'info');
+          }
+          
+        } catch (e) {
+          console.error('快速加载失败:', e);
+          setStatus('error', '加载配置失败');
+          addLog(`❌ 加载失败: ${e.message}`, 'error');
+        }
+      };
+    }
+
+    // === Tools Section: Instance ID Management ===
+    
+    // Sync Selected Instances
+    if (btnSyncSelected) {
+      btnSyncSelected.onclick = () => {
+        // 清空日志
+        clearLog();
+        
+        // 验证是否已经完成配置
+        if (!currentComponentId || currentMappings.length === 0) {
+          setStatus('error', '请先加载配置（点击"使用上次配置"）或完成完整同步流程');
+          addLog('❌ 未找到配置信息', 'error');
+          addLog('提示：点击"⚡ 使用上次配置"或返回完成 Step 1-3', 'warning');
+          return;
+        }
+        
+        if (!notionData || notionData.length === 0) {
+          setStatus('error', '请先拉取 Notion 数据');
+          addLog('❌ 未找到 Notion 数据', 'error');
+          return;
+        }
+        
+        // 发送同步选中的请求
+        parent.postMessage({ 
+          pluginMessage: { 
+            type: 'sync-selected',
+            componentId: currentComponentId,
+            mappings: currentMappings,
+            idField: idFieldSelect.value,
+            notionData: notionData
+          } 
+        }, '*');
+        setStatus('loading', '正在同步选中的 Instance...');
+        btnSyncSelected.disabled = true;
+      };
+    }
+    
+    // Read Instance ID
+    btnReadInstanceId.onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'read-instance-id' } }, '*');
+      setStatus('loading', '正在读取 Instance ID...');
+    };
+    
+    // Update Instance ID
+    btnUpdateInstanceId.onclick = () => {
+      const newId = newIdInput.value.trim();
+      if (!newId) {
+        setStatus('error', '请输入新的 ID');
+        return;
+      }
+      
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'update-instance-id', 
+          newId: newId 
+        } 
+      }, '*');
+      setStatus('loading', '正在更新 ID...');
+    };
+    
+    // Enable update button when new ID is entered
+    newIdInput.oninput = () => {
+      btnUpdateInstanceId.disabled = !newIdInput.value.trim();
+    };
 
     // ... existing code ...
 
@@ -373,11 +839,17 @@
     // Step 4: Sync
     btnSync.onclick = () => {
       console.log('點擊同步按鈕');
+      
+      // 清空并显示日志区域
+      clearLog();
+      addLog('🚀 开始同步任务', 'info');
+      
       setStatus('loading', '準備同步...');
       const mappings = [];
       
       const items = document.querySelectorAll('.mapping-item');
       console.log(`找到 ${items.length} 個映射項目`);
+      addLog(`找到 ${items.length} 个映射项目`, 'info');
 
       items.forEach(item => {
         const layerName = item.dataset.layer;
@@ -386,19 +858,25 @@
         const dataField = select.value;
         
         if (dataField && dataField !== '__ignore__') {
-          mappings.push({ layerName, dataField, dataType: layerType === 'RECTANGLE' || layerType === 'ELLIPSE' ? 'image' : 'text' });
+          // 改进判断：TEXT 是文字，其他都视为图片（包括 RECTANGLE, ELLIPSE, FRAME等）
+          const dataType = layerType === 'TEXT' ? 'text' : 'image';
+          console.log(`[Mapping] ${layerName} (${layerType}) → ${dataField} [${dataType}]`);
+          mappings.push({ layerName, dataField, dataType });
         }
       });
 
       console.log('生成的映射規則:', mappings);
+      addLog(`生成 ${mappings.length} 条映射规则`, 'success');
 
       if (mappings.length === 0) {
         console.warn('映射規則為空');
+        addLog('❌ 映射规则为空', 'error');
         return setStatus('error', '請至少設定一個映射欄位');
       }
 
       const idField = idFieldSelect.value;
       console.log('ID Field:', idField);
+      addLog(`使用 ID 字段: ${idField}`, 'info');
 
       parent.postMessage({ 
         pluginMessage: { 
@@ -410,15 +888,170 @@
         } 
       }, '*');
       
+      // 保存 mappings 供后续使用（例如：同步选中功能、图片同步）
+      saveStorage('mapping_' + currentComponentId, JSON.stringify(mappings));
+      currentMappings = mappings; // Store for later use
+      
       console.log('已發送 sync-mapped-data 訊息');
+      addLog(`📤 发送同步数据 (${notionData.length} 条记录)`, 'info');
       setStatus('loading', '正在同步數據... (請稍候)');
     };
 
-    async function downloadAndSendImages(mappings) {
-      // 1. Get List of all Notion IDs
-      const notionIds = notionData.map((item, i) => String(item[idFieldSelect.value] || `row-${i}`));
+    // 带重试机制的图片下载
+    async function fetchWithRetry(url, retries = 3) {
+      let lastError;
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response;
+        } catch (e) {
+          lastError = e;
+          console.warn(`[图片下载] 第 ${i + 1} 次尝试失败:`, e.message);
+          if (i < retries - 1) {
+            // 等待后重试，延迟递增
+            await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
+          }
+        }
+      }
+      throw lastError;
+    }
+
+    /**
+     * 压缩图片以符合 Figma 的大小限制
+     * Figma 限制: 最大 4096x4096 像素，建议文件大小不超过 4MB
+     * Figma 不支持 WEBP，会自动转换为 PNG
+     */
+    async function compressImage(arrayBuffer) {
+      const MAX_DIMENSION = 4096;
+      const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
+      
+      // 检测原始图片格式
+      const bytes = new Uint8Array(arrayBuffer);
+      let originalFormat = 'jpeg'; // 默认
+      let outputFormat = 'image/jpeg'; // 输出格式
+      
+      // 检测图片格式通过文件头（magic bytes）
+      if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+        originalFormat = 'png';
+        outputFormat = 'image/png';
+      } else if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+        originalFormat = 'jpeg';
+        outputFormat = 'image/jpeg';
+      } else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
+        originalFormat = 'webp';
+        outputFormat = 'image/png'; // WEBP 转换为 PNG，因为 Figma 不支持 WEBP
+        console.log(`[图片压缩] 检测到 WEBP 格式，将转换为 PNG`);
+      }
+      
+      console.log(`[图片压缩] 原始格式: ${originalFormat}, 输出格式: ${outputFormat}`);
+      
+      // WEBP 必须转换为 PNG，即使文件很小
+      const needsConversion = originalFormat === 'webp';
+      const needsCompression = arrayBuffer.byteLength > MAX_FILE_SIZE;
+      
+      // 如果文件已经很小且不需要格式转换，直接返回
+      if (!needsConversion && !needsCompression) {
+        console.log(`[图片压缩] 原始大小: ${(arrayBuffer.byteLength / 1024).toFixed(1)}KB，无需处理`);
+        return new Uint8Array(arrayBuffer);
+      }
+      
+      if (needsConversion && !needsCompression) {
+        console.log(`[图片压缩] 需要格式转换但无需压缩`);
+      } else if (needsCompression) {
+        console.log(`[图片压缩] 原始大小: ${(arrayBuffer.byteLength / 1024).toFixed(1)}KB，开始处理...`);
+      }
+      
+      return new Promise((resolve, reject) => {
+        // 使用原始格式创建 blob 以便正确加载图片
+        const originalMimeType = originalFormat === 'png' ? 'image/png' : 
+                                 originalFormat === 'jpeg' ? 'image/jpeg' : 
+                                 'image/webp';
+        const blob = new Blob([arrayBuffer], { type: originalMimeType });
+        const img = new Image();
+        const url = URL.createObjectURL(blob);
+        
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          
+          let width = img.width;
+          let height = img.height;
+          
+          // 计算缩放比例
+          let scale = 1;
+          if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+            scale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+            width = Math.floor(width * scale);
+            height = Math.floor(height * scale);
+            console.log(`[图片压缩] 原始尺寸: ${img.width}x${img.height}, 缩放至: ${width}x${height}`);
+          }
+          
+          // 创建 Canvas 进行处理
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // PNG 使用质量 1.0（无损），JPEG 使用递减质量
+          let quality = outputFormat === 'image/png' ? 1.0 : 0.9;
+          
+          const tryCompress = () => {
+            canvas.toBlob(async (blob) => {
+              if (!blob) {
+                reject(new Error('处理失败'));
+                return;
+              }
+              
+              // 如果是 JPEG 且文件仍然太大，降低质量
+              if (outputFormat === 'image/jpeg' && blob.size > MAX_FILE_SIZE && quality > 0.3) {
+                quality -= 0.1;
+                console.log(`[图片压缩] 当前大小: ${(blob.size / 1024).toFixed(1)}KB，降低质量至 ${(quality * 100).toFixed(0)}%`);
+                tryCompress();
+                return;
+              }
+              
+              const finalBuffer = await blob.arrayBuffer();
+              console.log(`[图片压缩] 处理完成: ${(finalBuffer.byteLength / 1024).toFixed(1)}KB (格式: ${outputFormat}${outputFormat === 'image/jpeg' ? `, 质量: ${(quality * 100).toFixed(0)}%` : ''})`);
+              resolve(new Uint8Array(finalBuffer));
+            }, outputFormat, quality);
+          };
+          
+          tryCompress();
+        };
+        
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('图片加载失败'));
+        };
+        
+        img.src = url;
+      });
+    }
+
+    async function downloadAndSendImages(mappings, selectedNotionIds = null, forceUpdate = false) {
+      console.log('[图片同步] 开始处理图片，mappings:', mappings);
+      console.log('[图片同步] 选中的Notion IDs:', selectedNotionIds);
+      console.log('[图片同步] 强制更新模式:', forceUpdate);
+      addLog('🖼️ 开始图片同步', 'info');
+      
+      // 1. Get List of Notion IDs to process
+      let notionIds;
+      if (selectedNotionIds && selectedNotionIds.length > 0) {
+        // 只处理选中的instance
+        notionIds = selectedNotionIds;
+        addLog(`只处理选中的 ${notionIds.length} 个 instance 的图片`, 'info');
+        if (forceUpdate) {
+          addLog('⚡ 强制更新模式：跳过URL比较，直接下载所有图片', 'info');
+        }
+      } else {
+        // 处理所有数据
+        notionIds = notionData.map((item, i) => String(item[idFieldSelect.value] || `row-${i}`));
+      }
+      console.log('[图片同步] 处理的 Notion IDs:', notionIds);
       
       setStatus('loading', '正在檢查現有圖片...');
+      addLog('正在检查现有图片...', 'info');
       
       // 2. Ask Backend for existing URLs
       // Wrap in Promise to wait for response
@@ -440,61 +1073,111 @@
         }, 2000);
       });
 
-      setStatus('loading', '正在下載圖片...');
-      let count = 0;
-      let skipped = 0;
-      const total = notionData.length * mappings.length;
+      // Filter data to process based on notionIds
+      const itemsToProcess = notionData.filter((item, i) => {
+        const id = String(item[idFieldSelect.value] || `row-${i}`);
+        return notionIds.includes(id);
+      });
 
-      for (let i = 0; i < notionData.length; i++) {
-        const item = notionData[i];
-        const idValue = String(item[idFieldSelect.value] || `row-${i}`);
+      setStatus('loading', '正在下載圖片...');
+      addLog(`开始下载图片 (总计 ${itemsToProcess.length} 条记录)`, 'info');
+      
+      let downloaded = 0;     // 实际下载的图片数
+      let skippedSame = 0;    // 跳过（URL相同）
+      let skippedNoUrl = 0;   // 跳过（无URL或无效URL）
+      let failed = 0;         // 下载失败
+
+      for (let i = 0; i < itemsToProcess.length; i++) {
+        const item = itemsToProcess[i];
+        const idValue = String(item[idFieldSelect.value] || `row-${i}`); // Need consistent ID generation
         const currentImages = existingUrls[idValue] || {};
+        console.log(`[图片同步] 处理记录 ${i+1}/${itemsToProcess.length}, ID: ${idValue}`);
+        
+        // 每处理 5 条记录显示一次进度
+        if ((i + 1) % 5 === 0 || i === 0) {
+          addLog(`处理记录 ${i+1}/${itemsToProcess.length}`, 'info');
+        }
 
         for (const m of mappings) {
           const newUrl = item[m.dataField];
+          console.log(`[图片同步]   图层: ${m.layerName}, 新URL: ${newUrl}`);
           
+          // 检查是否有有效的图片 URL
           if (typeof newUrl === 'string' && newUrl.startsWith('http')) {
              // 3. Compare with existing URL (Ignore Query Params)
-             // Notion URLs change query params (signatures) but base path is stable.
-             const cleanOld = oldUrl ? oldUrl.split('?')[0] : '';
-             const cleanNew = newUrl.split('?')[0];
+             // 强制更新模式：跳过URL比较，直接下载
+             if (forceUpdate) {
+               console.log(`[图片同步]   → 强制更新模式，直接下载`);
+             } else {
+               // Notion URLs change query params (signatures) but base path is stable.
+               const oldUrl = currentImages[m.layerName]; // Get existing URL for this layer
+               const cleanOld = oldUrl ? oldUrl.split('?')[0] : '';
+               const cleanNew = newUrl.split('?')[0];
 
-             // DEBUG LOG
-             if (oldUrl) {
-                console.log(`[ImgDebug] ID:${idValue} Layer:${m.layerName}`);
-                console.log(`   Old(Clean): ${cleanOld.slice(-20)}`);
-                console.log(`   New(Clean): ${cleanNew.slice(-20)}`);
-                console.log(`   Match: ${cleanOld === cleanNew}`);
-             }
+               // DEBUG LOG - 显示完整的清理后URL以便调试
+               if (oldUrl) {
+                  console.log(`[ImgDebug] ID:${idValue} Layer:${m.layerName}`);
+                  console.log(`   Old(Clean): ${cleanOld}`);
+                  console.log(`   New(Clean): ${cleanNew}`);
+                  console.log(`   Match: ${cleanOld === cleanNew}`);
+               }
 
-             if (cleanOld === cleanNew) {
-               skipped++;
-               count++;
-               continue; // SKIP DOWNLOAD
+               if (cleanOld === cleanNew) {
+                 console.log(`[图片同步]   → 跳过（URL相同）`);
+                 skippedSame++;
+                 continue; // SKIP DOWNLOAD
+               }
              }
           
             try {
-              const resp = await fetch(newUrl);
-              if (!resp.ok) throw new Error('Fetch failed');
+              console.log(`[图片同步]   → 开始下载: ${newUrl}`);
+              const resp = await fetchWithRetry(newUrl, 3); // 使用重试机制，最多3次
               const buffer = await resp.arrayBuffer();
+              
+              // 压缩图片以符合 Figma 限制
+              const compressedBytes = await compressImage(buffer);
+              
               parent.postMessage({
                 pluginMessage: {
                   type: 'set-image',
                   notionId: idValue,
                   layerName: m.layerName,
-                  imageBytes: new Uint8Array(buffer),
+                  imageBytes: compressedBytes,
                   imageUrl: newUrl // Send URL to save
                 }
               }, '*');
+              console.log(`[图片同步]   → 已下载并压缩`);
+              downloaded++;
+              
+              // 每下载 3 张图片显示一次进度
+              if (downloaded % 3 === 0) {
+                addLog(`✅ 已下载 ${downloaded} 张图片`, 'success');
+              }
             } catch (e) {
-              console.warn('Image fail', newUrl);
+              const errorMsg = e instanceof Error ? e.message : String(e);
+              console.error(`[图片同步]   → 下载失败: ${errorMsg}`);
+              console.error(`[图片同步]   → 失败的 URL: ${newUrl}`);
+              addLog(`❌ 下载失败: ${m.layerName}`, 'error');
+              failed++;
             }
+          } else {
+            // 无URL或无效URL
+            console.log(`[图片同步]   → 跳过（无有效URL）`);
+            skippedNoUrl++;
           }
-          count++;
-          if (count % 5 === 0) setStatus('loading', `處理圖片 ${count}/${total} (已跳過 ${skipped})...`);
+          
+          const processed = downloaded + skippedSame + skippedNoUrl + failed;
+          if (processed % 5 === 0) {
+            setStatus('loading', `處理圖片 ${processed}/${notionData.length * mappings.length} (已下載 ${downloaded}, 跳過 ${skippedSame + skippedNoUrl})...`);
+          }
         }
       }
-      setStatus('success', `同步完成！(共 ${total} 張，跳過 ${skipped} 張)`);
+      
+      const total = downloaded + skippedSame + skippedNoUrl + failed;
+      const successMsg = `同步完成！已下載 ${downloaded} 張新圖片，跳過 ${skippedSame} 張相同圖片，${skippedNoUrl} 個無圖片欄位` + (failed > 0 ? `，${failed} 張下載失敗` : '');
+      setStatus('success', successMsg);
+      addLog(successMsg, 'success');
+      addLog(`📊 统计: 下载 ${downloaded}, 跳过 ${skippedSame + skippedNoUrl}, 失败 ${failed}`, 'info');
       btnSync.disabled = false;
     }
 
@@ -542,10 +1225,20 @@
            if(vDisplay) vDisplay.textContent = 'v' + msg.version;
         }
 
-        if (msg.type === 'component-layers') {
-          console.log('Processing component-layers...');
-          componentLayers = msg.layers;
+        else if (msg.type === 'component-data') {
+          // 如果是快速加载 (fromSelection)，由局部处理函数处理，忽略此处以防跳转 UI
+          if (msg.fromSelection) return;
+
           currentComponentId = msg.componentId;
+          componentLayers = msg.layers;
+          
+          // 保存选中的 Component ID，下次自动恢复
+          saveStorage('last_component_id', currentComponentId);
+          console.log('[存储] 已保存 Component ID:', currentComponentId);
+          
+          // Try to load saved mappings for this component
+          setStatus('loading', '正在讀取儲存的映射設定...');
+          loadStorage('mapping_' + currentComponentId);
           
           try {
             renderMappingUI(componentLayers);
@@ -572,6 +1265,39 @@
           }
           showStep(3);
         }
+        else if (msg.type === 'component-layers') {
+          // 处理「读取选中的 Component」返回的数据
+          console.log('Processing component-layers...');
+          componentLayers = msg.layers;
+          currentComponentId = msg.componentId;
+          
+          // 保存选中的 Component ID
+          saveStorage('last_component_id', currentComponentId);
+          console.log('[存储] 已保存 Component ID:', currentComponentId);
+          
+          try {
+            renderMappingUI(componentLayers);
+          } catch (e) {
+            console.error('Render UI Error:', e);
+            setStatus('error', '渲染介面失敗: ' + e.message);
+          }
+          
+          document.getElementById('comp-name').textContent = msg.componentName;
+          document.getElementById('selected-comp-info').classList.remove('hidden');
+          
+          if (componentLayers.length === 0) {
+            setStatus('error', '未找到名稱含 # 的圖層 (請檢查圖層名稱)');
+            btnSync.disabled = true;
+          } else {
+            setStatus('success', '已讀取 Component，請設定映射');
+            btnSync.disabled = false;
+            
+            // Try to load saved mappings for this component
+            setStatus('loading', '正在讀取儲存的映射設定...');
+            loadStorage('mapping_' + currentComponentId);
+          }
+          showStep(3);
+        }
         else if (msg.type === 'status') {
           setStatus('loading', msg.message);
         }
@@ -585,18 +1311,74 @@
           
           if (imageMappings.length > 0) {
             setStatus('success', msg.message + ' (開始處理圖片...)');
+            addLog(`✅ ${msg.message}`, 'success');
+            addLog(`检测到 ${imageMappings.length} 个图片映射，开始图片同步`, 'info');
             downloadAndSendImages(imageMappings);
           } else {
             setStatus('success', msg.message);
+            addLog(`✅ ${msg.message}`, 'success');
+            addLog('未检测到图片映射，同步完成', 'info');
             btnSync.disabled = false;
           }
           showSyncAgain(); // Show "Sync Again" button
+        }
+        else if (msg.type === 'instance-id-info') {
+          // Display current instance ID
+          currentIdValue.textContent = msg.currentId;
+          currentNodeName.textContent = `节点: ${msg.nodeName}`;
+          currentIdDisplay.classList.remove('hidden');
+          newIdInput.value = ''; // Clear input
+          btnUpdateInstanceId.disabled = true;
+          setStatus('success', '已读取 Instance ID');
+        }
+        else if (msg.type === 'id-updated') {
+          // ID updated successfully
+          setStatus('success', msg.message);
+          // Clear form
+          currentIdDisplay.classList.add('hidden');
+          newIdInput.value = '';
+          btnUpdateInstanceId.disabled = true;
+        }
+        else if (msg.type === 'sync-selected-done') {
+          // 同步选中完成
+          console.log('[sync-selected-done] 收到消息:', msg);
+          console.log('[sync-selected-done] updatedNotionIds:', msg.updatedNotionIds);
+          addLog(`✅ ${msg.message}`, 'success');
+          
+          // 检查是否需要同步图片
+          const imageMappings = currentMappings.filter(m => m.dataType !== 'text');
+          console.log('[sync-selected-done] imageMappings 数量:', imageMappings.length);
+          
+          if (imageMappings.length > 0 && msg.updatedNotionIds && msg.updatedNotionIds.length > 0) {
+            setStatus('success', msg.message + ' (開始處理圖片...)');
+            addLog(`检测到 ${imageMappings.length} 个图片映射，开始图片同步`, 'info');
+            console.log('[sync-selected-done] 调用 downloadAndSendImages，IDs:', msg.updatedNotionIds);
+            // 只处理更新的instance的图片，使用强制更新模式
+            downloadAndSendImages(imageMappings, msg.updatedNotionIds, true);
+          } else {
+            setStatus('success', msg.message);
+            addLog('未检测到图片映射或无更新的instance，同步完成', 'info');
+            if (btnSyncSelected) btnSyncSelected.disabled = false;
+          }
         }
         else if (msg.type === 'storage-data') {
           if (msg.key === 'webhook_url' && msg.value) {
             webhookInput.value = msg.value;
             // Auto-fetch if URL exists
-            if (!notionData.length) setTimeout(() => btnFetch.click(), 500);
+            if (msg.value && msg.value.startsWith('http')) {
+              console.log('[自动获取] URL 已存在，自动拉取数据...');
+              btnFetch.click();
+            }
+          }
+          if (msg.key === 'last_component_id' && msg.value) {
+            console.log('[自动恢复] 上次选择的 Component ID:', msg.value);
+            // 发送消息到后端，请求验证并加载这个 Component
+            parent.postMessage({ 
+              pluginMessage: { 
+                type: 'restore-component',
+                componentId: msg.value
+              } 
+            }, '*');
           }
           
           if (msg.key === 'cached_data' && msg.value) {
@@ -804,13 +1586,30 @@
     }
 
     function loadStorage(key) {
-      parent.postMessage({ pluginMessage: { type: 'storage-get', key } }, '*');
+      return new Promise((resolve) => {
+        const handler = (e) => {
+          const msg = e.data.pluginMessage;
+          if (msg && msg.type === 'storage-data' && msg.key === key) {
+            window.removeEventListener('message', handler);
+            resolve(msg.value);
+          }
+        };
+        window.addEventListener('message', handler);
+        parent.postMessage({ pluginMessage: { type: 'storage-get', key } }, '*');
+        
+        // Timeout
+        setTimeout(() => {
+          window.removeEventListener('message', handler);
+          resolve(null);
+        }, 2000);
+      });
     }
 
     // --- Init ---
     try {
-      // Request ClientStorage (Persistent)
+      // On load → get saved webhook URL and last component
       loadStorage('webhook_url');
+      loadStorage('last_component_id');
       loadStorage('cached_data');
 
     } catch (e) {

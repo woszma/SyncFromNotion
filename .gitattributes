@@ -1,0 +1,7 @@
+# Git Attributes Configuration
+# 指定 manifest.json 使用自定义的 filter
+
+# 对 manifest.json 应用 manifest-id filter
+# clean: 在 git add 时移除 id 字段
+# smudge: 在 git checkout 时保持原样（即：不做任何修改）
+manifest.json filter=manifest-id

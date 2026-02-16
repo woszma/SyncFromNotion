@@ -23,7 +23,7 @@ const PLUGIN_DATA_KEY = 'notionId';
 const PLUGIN_DATA_COMPONENT = 'sourceComponentId';
 const CARD_GAP = 20;
 const CARDS_PER_ROW = 4;
-const VERSION = '1.1.2'; // Version Control
+const VERSION = '1.2.0'; // Version Control
 
 // --- 主程式 ---
 figma.showUI(__html__, { width: 420, height: 520 });
@@ -104,29 +104,35 @@ figma.ui.onmessage = async (msg: any) => {
       if (!notionId || !imageBytes || !layerName) return;
 
       const existingMap = buildExistingMap();
-      const node = existingMap.get(notionId);
-      if (node && 'children' in node) {
-        const frame = node as FrameNode;
-        const imageData = new Uint8Array(imageBytes);
-        const image = figma.createImage(imageData);
+      const nodes = existingMap.get(notionId); // 现在返回数组
+      
+      // 更新所有使用此 ID 的 instance
+      if (nodes && nodes.length > 0) {
+        for (const node of nodes) {
+          if ('children' in node) {
+            const frame = node as FrameNode;
+            const imageData = new Uint8Array(imageBytes);
+            const image = figma.createImage(imageData);
 
-        const targetLayer = findChildByName(frame, layerName);
-        if (targetLayer && 'fills' in targetLayer) {
-          const target = targetLayer as GeometryMixin & SceneNode;
-          target.fills = [
-            { type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }
-          ];
+            const targetLayer = findChildByName(frame, layerName);
+            if (targetLayer && 'fills' in targetLayer) {
+              const target = targetLayer as GeometryMixin & SceneNode;
+              target.fills = [
+                { type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }
+              ];
 
-          // Save URL to Instance/Frame PluginData using a JSON object
-          if (imageUrl) {
-             const existingJson = frame.getPluginData('img_urls');
-             let urlMap: Record<string, string> = {};
-             try {
-               if (existingJson) urlMap = JSON.parse(existingJson);
-             } catch {}
-             
-             urlMap[layerName] = imageUrl;
-             frame.setPluginData('img_urls', JSON.stringify(urlMap));
+              // Save URL to Instance/Frame PluginData using a JSON object
+              if (imageUrl) {
+                const existingJson = frame.getPluginData('img_urls');
+                let urlMap: Record<string, string> = {};
+                try {
+                  if (existingJson) urlMap = JSON.parse(existingJson);
+                } catch {}
+                
+                urlMap[layerName] = imageUrl;
+                frame.setPluginData('img_urls', JSON.stringify(urlMap));
+              }
+            }
           }
         }
       }
@@ -146,9 +152,10 @@ figma.ui.onmessage = async (msg: any) => {
       const resultMap: Record<string, Record<string, string>> = {};
 
       for (const id of notionIds) {
-        const node = existingMap.get(id);
-        if (node) {
-           const json = node.getPluginData('img_urls');
+        const nodes = existingMap.get(id); // 现在返回数组
+        // 取第一个节点的图片 URL（所有相同 ID 的 instance 应该有相同的图片）
+        if (nodes && nodes.length > 0) {
+           const json = nodes[0].getPluginData('img_urls');
            if (json) {
              try {
                 resultMap[id] = JSON.parse(json);
@@ -160,6 +167,232 @@ figma.ui.onmessage = async (msg: any) => {
     } catch (e) {
       console.warn(e);
       figma.ui.postMessage({ type: 'image-urls', urls: {} });
+    }
+    return;
+  }
+
+  // ================================================================
+  // 工具：读取选中 Instance 的 ID
+  // ================================================================
+  if (msg.type === 'read-instance-id') {
+    try {
+      const selection = figma.currentPage.selection;
+      
+      if (selection.length === 0) {
+        figma.ui.postMessage({ type: 'error', message: '请先选中一个 Instance' });
+        return;
+      }
+      
+      const node = selection[0];
+      const notionId = node.getPluginData(PLUGIN_DATA_KEY);
+      
+      if (!notionId) {
+        figma.ui.postMessage({ type: 'error', message: '该节点没有 Notion ID（可能不是由插件创建的）' });
+        return;
+      }
+      
+      figma.ui.postMessage({ 
+        type: 'instance-id-info', 
+        currentId: notionId,
+        nodeName: node.name
+      });
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      figma.ui.postMessage({ type: 'error', message: `读取失败: ${errorMsg}` });
+    }
+    return;
+  }
+
+  // ================================================================
+  // 工具：更新选中 Instance 的 ID
+  // ================================================================
+  if (msg.type === 'update-instance-id') {
+    try {
+      const { newId } = msg;
+      const selection = figma.currentPage.selection;
+      
+      if (selection.length === 0) {
+        figma.ui.postMessage({ type: 'error', message: '请先选中一个 Instance' });
+        return;
+      }
+      
+      if (!newId || newId.trim() === '') {
+        figma.ui.postMessage({ type: 'error', message: '请输入有效的 ID' });
+        return;
+      }
+      
+      const node = selection[0];
+      const oldId = node.getPluginData(PLUGIN_DATA_KEY);
+      node.setPluginData(PLUGIN_DATA_KEY, newId.trim());
+      
+      figma.ui.postMessage({ 
+        type: 'id-updated', 
+        message: `ID 已更新: ${oldId || '(无)'} → ${newId.trim()}`
+      });
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      figma.ui.postMessage({ type: 'error', message: `更新失败: ${errorMsg}` });
+    }
+    return;
+  }
+
+  // ================================================================
+  // 工具：恢复上次选择的 Component
+  // ================================================================
+  if (msg.type === 'restore-component') {
+    try {
+      const { componentId } = msg;
+      const node = await figma.getNodeByIdAsync(componentId);
+      
+      if (!node || node.type !== 'COMPONENT') {
+        figma.ui.postMessage({
+          type: 'error',
+          message: 'Component 不存在或已被删除'
+        });
+        return;
+      }
+      
+      const component = node as ComponentNode;
+      const layers = collectLayers(component);
+      
+      figma.ui.postMessage({
+        type: 'component-data',
+        componentName: component.name,
+        componentId: component.id,
+        layers: layers
+      });
+    } catch (e) {
+      console.warn('[恢复失败]', e);
+      figma.ui.postMessage({
+        type: 'error',
+        message: 'Component 恢复失败'
+      });
+    }
+    return;
+  }
+
+  // ================================================================
+  // 工具：从选中的 Instance 加载配置
+  // ================================================================
+  if (msg.type === 'load-from-selection') {
+    try {
+      const selected = figma.currentPage.selection;
+      
+      if (selected.length === 0) {
+        figma.ui.postMessage({
+          type: 'error',
+          message: '请先选中一个 Instance'
+        });
+        return;
+      }
+      
+      const node = selected[0];
+      
+      if (node.type !== 'INSTANCE') {
+        figma.ui.postMessage({
+          type: 'error',
+          message: '请选中一个 Instance（不是 Component）'
+        });
+        return;
+      }
+      
+      const instance = node as InstanceNode;
+      const component = await instance.getMainComponentAsync();
+      
+      if (!component) {
+        figma.ui.postMessage({
+          type: 'error',
+          message: 'Instance 的 Component 不存在'
+        });
+        return;
+      }
+      
+      console.log('[从选中加载] Component:', component.name);
+      
+      // 读取 Component 的图层信息
+      const layers = collectLayers(component);
+      
+      figma.ui.postMessage({
+        type: 'component-data',
+        componentName: component.name,
+        componentId: component.id,
+        layers: layers,
+        fromSelection: true
+      });
+    } catch (e) {
+      console.warn('[从选中加载失败]', e);
+      figma.ui.postMessage({
+        type: 'error',
+        message: '加载失败，请重试'
+      });
+    }
+    return;
+  }
+
+  // ================================================================
+  // 工具：同步选中的 Instance
+  // ================================================================
+  if (msg.type === 'sync-selected') {
+    try {
+      const { componentId, mappings, idField, notionData } = msg;
+      const selection = figma.currentPage.selection;
+      
+      if (selection.length === 0) {
+        figma.ui.postMessage({ type: 'error', message: '请先选中至少一个 Instance' });
+        return;
+      }
+      
+      // 过滤出有 notionId 的节点
+      const instancesWithId = selection.filter(node => {
+        return node.getPluginData(PLUGIN_DATA_KEY);
+      });
+      
+      if (instancesWithId.length === 0) {
+        figma.ui.postMessage({ type: 'error', message: '选中的节点中没有插件创建的 Instance' });
+        return;
+      }
+      
+      // 获取所有需要同步的 notionIds
+      console.log(`找到 ${instancesWithId.length} 个选中的 instance 有 ID 数据`);
+      
+      // 验证 component 存在
+      const component = await figma.getNodeByIdAsync(componentId) as ComponentNode | null;
+      if (!component) {
+        figma.ui.postMessage({ type: 'error', message: 'Component 不存在' });
+        return;
+      }
+      await loadAllFontsFromComponent(component);
+      
+      // 更新每个选中的 instance
+      let updatedCount = 0;
+      const updatedNotionIds: string[] = [];
+      
+      for (const node of instancesWithId) {
+        const notionId = node.getPluginData(PLUGIN_DATA_KEY);
+        // 从数据中找到对应记录
+        const record = notionData.find((item: any) => {
+          return String(item[idField] || '') === notionId;
+        });
+        
+        if (record) {
+          await updateInstance(node, record, mappings);
+          updatedCount++;
+          updatedNotionIds.push(notionId);
+        } else {
+          console.warn(`未找到 ID ${notionId} 对应的数据记录`);
+        }
+      }
+      
+      figma.ui.postMessage({ 
+        type: 'sync-selected-done', 
+        message: `已更新 ${updatedCount}/${instancesWithId.length} 个 Instance`,
+        updatedCount: updatedCount,
+        updatedNotionIds: updatedNotionIds,  // 返回更新的IDs
+        totalCount: instancesWithId.length
+      });
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      figma.ui.postMessage({ type: 'error', message: `同步失败: ${errorMsg}` });
     }
     return;
   }
@@ -225,13 +458,15 @@ figma.ui.onmessage = async (msg: any) => {
       for (let i = 0; i < data.length; i++) {
         const record = data[i];
         const recordId = String(record[idField] || `row-${i}`);
-        const existingNode = existingMap.get(recordId);
+        const existingNodes = existingMap.get(recordId); // 现在返回数组
 
-        if (existingNode) {
-          // ---- UPDATE: 更新現有 Instance（保留位置）----
-          await updateInstance(existingNode, record, mappings);
-          updatedCount++;
-          affectedNodes.push(existingNode);
+        if (existingNodes && existingNodes.length > 0) {
+          // ---- UPDATE: 更新所有使用此 ID 的 Instance（支持多个 instance 使用相同 ID）----
+          for (const existingNode of existingNodes) {
+            await updateInstance(existingNode, record, mappings);
+            updatedCount++;
+            affectedNodes.push(existingNode);
+          }
         } else {
           // ---- INSERT: 建立新 Instance ----
           const col = newIndex % CARDS_PER_ROW;
@@ -329,15 +564,18 @@ function collectLayers(node: SceneNode, prefix = ''): { name: string; type: stri
   return results;
 }
 
-/** 掃描當前頁面，建立 notionId → SceneNode 索引 */
-function buildExistingMap(): Map<string, SceneNode> {
-  const map = new Map<string, SceneNode>();
+/** 掃描當前頁面，建立 notionId → SceneNode[] 索引（支持多个 instance 使用相同 ID） */
+function buildExistingMap(): Map<string, SceneNode[]> {
+  const map = new Map<string, SceneNode[]>();
   const page = figma.currentPage;
 
   function walk(node: SceneNode) {
     const notionId = node.getPluginData(PLUGIN_DATA_KEY);
     if (notionId) {
-      map.set(notionId, node);
+      // 支持多个 instance 使用相同的 ID
+      const existing = map.get(notionId) || [];
+      existing.push(node);
+      map.set(notionId, existing);
     }
     if ('children' in node) {
       for (const child of node.children) {

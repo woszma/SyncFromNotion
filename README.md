@@ -31,6 +31,16 @@
 
 ## 🛠️ 開發指南
 
+### 首次設置 (僅需執行一次)
+
+克隆項目後，請先運行以下命令設置 Git filter，以確保本地開發時的插件 ID 不會被提交到倉庫：
+
+```bash
+./scripts/setup-git-filters.sh
+```
+
+> **說明**：在 Figma Desktop 中以開發模式導入插件時，Figma 會自動在 `manifest.json` 中添加 `id` 字段。此 Git filter 確保該字段僅保留在您的本地文件中，不會提交到版本控制系統。
+
 ### 安裝依賴
 
 ```bash
