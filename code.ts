@@ -23,9 +23,11 @@ const PLUGIN_DATA_KEY = 'notionId';
 const PLUGIN_DATA_COMPONENT = 'sourceComponentId';
 const CARD_GAP = 20;
 const CARDS_PER_ROW = 4;
+const VERSION = '1.1.2'; // Version Control
 
 // --- 主程式 ---
 figma.showUI(__html__, { width: 420, height: 520 });
+figma.ui.postMessage({ type: 'version-info', version: VERSION });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 figma.ui.onmessage = async (msg: any) => {
@@ -98,7 +100,7 @@ figma.ui.onmessage = async (msg: any) => {
   // ================================================================
   if (msg.type === 'set-image') {
     try {
-      const { notionId, layerName, imageBytes } = msg;
+      const { notionId, layerName, imageBytes, imageUrl } = msg;
       if (!notionId || !imageBytes || !layerName) return;
 
       const existingMap = buildExistingMap();
@@ -110,13 +112,54 @@ figma.ui.onmessage = async (msg: any) => {
 
         const targetLayer = findChildByName(frame, layerName);
         if (targetLayer && 'fills' in targetLayer) {
-          (targetLayer as GeometryMixin & SceneNode).fills = [
+          const target = targetLayer as GeometryMixin & SceneNode;
+          target.fills = [
             { type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }
           ];
+
+          // Save URL to Instance/Frame PluginData using a JSON object
+          if (imageUrl) {
+             const existingJson = frame.getPluginData('img_urls');
+             let urlMap: Record<string, string> = {};
+             try {
+               if (existingJson) urlMap = JSON.parse(existingJson);
+             } catch {}
+             
+             urlMap[layerName] = imageUrl;
+             frame.setPluginData('img_urls', JSON.stringify(urlMap));
+          }
         }
       }
     } catch (e) {
       console.warn('圖片嵌入失敗:', e);
+    }
+    return;
+  }
+
+  // ================================================================
+  // 獲取現有圖片 URL (用於優化同步)
+  // ================================================================
+  if (msg.type === 'get-image-urls') {
+    try {
+      const { notionIds } = msg;
+      const existingMap = buildExistingMap();
+      const resultMap: Record<string, Record<string, string>> = {};
+
+      for (const id of notionIds) {
+        const node = existingMap.get(id);
+        if (node) {
+           const json = node.getPluginData('img_urls');
+           if (json) {
+             try {
+                resultMap[id] = JSON.parse(json);
+             } catch {}
+           }
+        }
+      }
+      figma.ui.postMessage({ type: 'image-urls', urls: resultMap });
+    } catch (e) {
+      console.warn(e);
+      figma.ui.postMessage({ type: 'image-urls', urls: {} });
     }
     return;
   }
@@ -263,7 +306,6 @@ function sendStatus(message: string) {
   figma.ui.postMessage({ type: 'status', message });
 }
 
-/** 遞歸收集 Component 中所有可映射的圖層 */
 /** 遞歸收集 Component 中所有可映射的圖層 */
 function collectLayers(node: SceneNode, prefix = ''): { name: string; type: string; path: string }[] {
   const results: { name: string; type: string; path: string }[] = [];

@@ -105,7 +105,7 @@
 </head>
 <body>
 
-  <h2>SyncFromNotion v2</h2>
+  <h2>SyncFromNotion <span id="version-display" style="font-size:10px; color:#888; font-weight:normal; margin-left:8px;">v1.1.2</span></h2>
 
   <div id="step-1" class="step-container">
     <div class="step-header">Step 1: 獲取數據</div>
@@ -415,38 +415,86 @@
     };
 
     async function downloadAndSendImages(mappings) {
+      // 1. Get List of all Notion IDs
+      const notionIds = notionData.map((item, i) => String(item[idFieldSelect.value] || `row-${i}`));
+      
+      setStatus('loading', '正在檢查現有圖片...');
+      
+      // 2. Ask Backend for existing URLs
+      // Wrap in Promise to wait for response
+      const existingUrls = await new Promise((resolve) => {
+        const handler = (e) => {
+          const msg = e.data.pluginMessage;
+          if (msg && msg.type === 'image-urls') {
+            window.removeEventListener('message', handler);
+            resolve(msg.urls || {});
+          }
+        };
+        window.addEventListener('message', handler);
+        parent.postMessage({ pluginMessage: { type: 'get-image-urls', notionIds } }, '*');
+        
+        // Timeout fallback
+        setTimeout(() => {
+           window.removeEventListener('message', handler);
+           resolve({});
+        }, 2000);
+      });
+
       setStatus('loading', '正在下載圖片...');
       let count = 0;
+      let skipped = 0;
       const total = notionData.length * mappings.length;
 
       for (let i = 0; i < notionData.length; i++) {
         const item = notionData[i];
-        // Must use the same ID logic as code.ts
-        const idValue = item[idFieldSelect.value] || `row-${i}`;
+        const idValue = String(item[idFieldSelect.value] || `row-${i}`);
+        const currentImages = existingUrls[idValue] || {};
 
         for (const m of mappings) {
-          const url = item[m.dataField];
-          if (typeof url === 'string' && url.startsWith('http')) {
+          const newUrl = item[m.dataField];
+          
+          if (typeof newUrl === 'string' && newUrl.startsWith('http')) {
+             // 3. Compare with existing URL (Ignore Query Params)
+             // Notion URLs change query params (signatures) but base path is stable.
+             const cleanOld = oldUrl ? oldUrl.split('?')[0] : '';
+             const cleanNew = newUrl.split('?')[0];
+
+             // DEBUG LOG
+             if (oldUrl) {
+                console.log(`[ImgDebug] ID:${idValue} Layer:${m.layerName}`);
+                console.log(`   Old(Clean): ${cleanOld.slice(-20)}`);
+                console.log(`   New(Clean): ${cleanNew.slice(-20)}`);
+                console.log(`   Match: ${cleanOld === cleanNew}`);
+             }
+
+             if (cleanOld === cleanNew) {
+               skipped++;
+               count++;
+               continue; // SKIP DOWNLOAD
+             }
+          
             try {
-              const resp = await fetch(url);
+              const resp = await fetch(newUrl);
+              if (!resp.ok) throw new Error('Fetch failed');
               const buffer = await resp.arrayBuffer();
               parent.postMessage({
                 pluginMessage: {
                   type: 'set-image',
-                  notionId: String(idValue),
+                  notionId: idValue,
                   layerName: m.layerName,
-                  imageBytes: new Uint8Array(buffer)
+                  imageBytes: new Uint8Array(buffer),
+                  imageUrl: newUrl // Send URL to save
                 }
               }, '*');
             } catch (e) {
-              console.warn('Image fail', url);
+              console.warn('Image fail', newUrl);
             }
           }
           count++;
-          if (count % 5 === 0) setStatus('loading', `處理圖片 ${count}/${total}...`);
+          if (count % 5 === 0) setStatus('loading', `處理圖片 ${count}/${total} (已跳過 ${skipped})...`);
         }
       }
-      setStatus('success', '同步完成！');
+      setStatus('success', `同步完成！(共 ${total} 張，跳過 ${skipped} 張)`);
       btnSync.disabled = false;
     }
 
@@ -488,6 +536,11 @@
         const msg = event.data.pluginMessage;
         console.log('Frontend received message:', msg);
         if (!msg) return;
+
+        if (msg.type === 'version-info') {
+           const vDisplay = document.getElementById('version-display');
+           if(vDisplay) vDisplay.textContent = 'v' + msg.version;
+        }
 
         if (msg.type === 'component-layers') {
           console.log('Processing component-layers...');
