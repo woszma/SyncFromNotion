@@ -151,7 +151,14 @@
 
   <div id="step-preview" class="step-container hidden">
     <div class="step-header">Step 1.5: 數據預覽</div>
-    <p class="mb-8" style="color:#aaa">確認欄位與內容是否正確 (顯示第1筆)</p>
+    <p class="mb-8" style="color:#aaa">確認欄位與內容是否正確</p>
+    
+    <!-- Navigation Bar -->
+    <div class="flex gap-8 mb-8" style="justify-content: space-between; align-items: center; background: #333; padding: 4px 8px; border-radius: 4px;">
+      <button id="btn-prev-record" class="secondary" style="width: 30px; padding: 4px;">◀</button>
+      <span id="preview-counter" style="font-size: 11px; color: #fff;">1 / --</span>
+      <button id="btn-next-record" class="secondary" style="width: 30px; padding: 4px;">▶</button>
+    </div>
     <div id="preview-list" class="mb-16" style="max-height: 250px; overflow-y: auto; background: #222; padding: 8px; border: 1px solid #444; border-radius: 4px;">
       <!-- Preview items -->
     </div>
@@ -275,6 +282,7 @@
     let componentLayers = [];
     let currentComponentId = null;
     let currentMappings = []; // [New] Store mappings for image sync phase
+    let currentPreviewIndex = 0;
 
     // --- Elements ---
     const steps = {
@@ -444,7 +452,7 @@
          saveStorage('cached_data', JSON.stringify(data));
 
          // Render Preview
-         renderPreview(data[0]);
+         renderPreview(0);
          showStep('preview');
          return true;
 
@@ -1183,7 +1191,29 @@
 
     // --- Helpers ---
     
-    function renderPreview(record) {
+    function renderPreview(index = 0) {
+      if (!notionData || notionData.length === 0) return;
+      
+      // Boundary checks
+      if (index < 0) index = 0;
+      if (index >= notionData.length) index = notionData.length - 1;
+      
+      currentPreviewIndex = index;
+      const record = notionData[index];
+      
+      // Update Counter
+      const counterEl = document.getElementById('preview-counter');
+      if (counterEl) {
+        counterEl.textContent = `${index + 1} / ${notionData.length}`;
+      }
+      
+      // Update Buttons
+      const btnPrev = document.getElementById('btn-prev-record');
+      const btnNext = document.getElementById('btn-next-record');
+      
+      if (btnPrev) btnPrev.disabled = (index === 0);
+      if (btnNext) btnNext.disabled = (index === notionData.length - 1);
+      
       previewList.innerHTML = '';
       schemaKeys.forEach(key => {
         const div = document.createElement('div');
@@ -1212,6 +1242,27 @@
         previewList.appendChild(div);
       });
     }
+
+    // Navigation Event Listeners
+    const btnPrevRecord = document.getElementById('btn-prev-record');
+    const btnNextRecord = document.getElementById('btn-next-record');
+
+    if (btnPrevRecord) {
+      btnPrevRecord.onclick = () => {
+        if (currentPreviewIndex > 0) {
+          renderPreview(currentPreviewIndex - 1);
+        }
+      };
+    }
+
+    if (btnNextRecord) {
+      btnNextRecord.onclick = () => {
+        if (currentPreviewIndex < notionData.length - 1) {
+          renderPreview(currentPreviewIndex + 1);
+        }
+      };
+    }
+
 
     // --- Message Handler ---
     window.onmessage = (event) => {
@@ -1389,7 +1440,7 @@
                  const allKeys = new Set();
                  parsed.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
                  schemaKeys = Array.from(allKeys);
-                 renderPreview(parsed[0]);
+                 renderPreview(0);
                  showStep('preview');
                  setStatus('success', `已載入緩存數據 (${parsed.length} 筆)`);
               }
