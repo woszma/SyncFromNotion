@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="utf-8">
   <title>SyncFromNotion</title>
   <style>
     /* Reset & Base */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: 'Inter', sans-serif;
       background-color: #2c2c2c;
@@ -18,24 +24,69 @@
     }
 
     /* Helper Classes */
-    .hidden { display: none !important; }
-    .flex { display: flex; }
-    .flex-col { flex-direction: column; }
-    .gap-8 { gap: 8px; }
-    .gap-4 { gap: 4px; }
-    .items-center { align-items: center; }
-    .justify-between { justify-content: space-between; }
-    .w-full { width: 100%; }
-    .mb-8 { margin-bottom: 8px; }
-    .mb-16 { margin-bottom: 16px; }
+    .hidden {
+      display: none !important;
+    }
+
+    .flex {
+      display: flex;
+    }
+
+    .flex-col {
+      flex-direction: column;
+    }
+
+    .gap-8 {
+      gap: 8px;
+    }
+
+    .gap-4 {
+      gap: 4px;
+    }
+
+    .items-center {
+      align-items: center;
+    }
+
+    .justify-between {
+      justify-content: space-between;
+    }
+
+    .w-full {
+      width: 100%;
+    }
+
+    .mb-8 {
+      margin-bottom: 8px;
+    }
+
+    .mb-16 {
+      margin-bottom: 16px;
+    }
 
     /* Component Styles */
-    h2 { font-size: 13px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-    h2::before { content: '🔄'; font-size: 12px; }
-    
-    label { color: #b3b3b3; margin-bottom: 4px; display: block; }
-    
-    input, select {
+    h2 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    h2::before {
+      content: '🔄';
+      font-size: 12px;
+    }
+
+    label {
+      color: #b3b3b3;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    input,
+    select {
       background: #3c3c3c;
       border: 1px solid #3c3c3c;
       color: #fff;
@@ -45,9 +96,16 @@
       width: 100%;
       outline: none;
     }
-    input:focus, select:focus { border-color: #18a0fb; }
-    input::placeholder { color: #888; }
-    
+
+    input:focus,
+    select:focus {
+      border-color: #18a0fb;
+    }
+
+    input::placeholder {
+      color: #888;
+    }
+
     /* Buttons */
     button {
       background: #18a0fb;
@@ -60,15 +118,43 @@
       font-size: 11px;
       transition: background 0.2s;
     }
-    button:hover { background: #0d8ce0; }
-    button:disabled { background: #555; cursor: not-allowed; color: #aaa; }
-    button.secondary { background: transparent; border: 1px solid #555; color: #ccc; }
-    button.secondary:hover { border-color: #888; color: #fff; }
+
+    button:hover {
+      background: #0d8ce0;
+    }
+
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+      color: #aaa;
+    }
+
+    button.secondary {
+      background: transparent;
+      border: 1px solid #555;
+      color: #ccc;
+    }
+
+    button.secondary:hover {
+      border-color: #888;
+      color: #fff;
+    }
 
     /* Steps */
-    .step-container { flex: 1; overflow-y: auto; padding-right: 2px; }
-    .step-header { font-weight: 600; color: #fff; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #444; }
-    
+    .step-container {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .step-header {
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #444;
+    }
+
     /* Mapping List */
     .mapping-item {
       background: #333;
@@ -77,10 +163,31 @@
       margin-bottom: 6px;
       border: 1px solid #444;
     }
-    .layer-info { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-    .layer-icon { font-size: 10px; color: #888; }
-    .layer-name { font-weight: 500; color: #ddd; }
-    .layer-type { font-size: 9px; background: #444; padding: 2px 4px; border-radius: 2px; color: #aaa; }
+
+    .layer-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .layer-icon {
+      font-size: 10px;
+      color: #888;
+    }
+
+    .layer-name {
+      font-weight: 500;
+      color: #ddd;
+    }
+
+    .layer-type {
+      font-size: 9px;
+      background: #444;
+      padding: 2px 4px;
+      border-radius: 2px;
+      color: #aaa;
+    }
 
     /* Status Bar */
     .status-bar {
@@ -93,13 +200,21 @@
       font-size: 10px;
       color: #999;
     }
+
     .spinner {
-      width: 10px; height: 10px;
-      border: 2px solid #555; border-top-color: #fff;
+      width: 10px;
+      height: 10px;
+      border: 2px solid #555;
+      border-top-color: #fff;
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     /* 进度日志区域 */
     #progress-log {
@@ -114,31 +229,38 @@
       font-size: 10px;
       line-height: 1.4;
     }
+
     #progress-log.hidden {
       display: none;
     }
+
     .log-entry {
       color: #999;
       padding: 2px 0;
     }
+
     .log-entry.success {
       color: #4dff88;
     }
+
     .log-entry.info {
       color: #4da6ff;
     }
+
     .log-entry.warning {
       color: #ffb84d;
     }
+
     .log-entry.error {
       color: #ff4d4d;
     }
-
   </style>
 </head>
+
 <body>
 
-  <h2>SyncFromNotion <span id="version-display" style="font-size:10px; color:#888; font-weight:normal; margin-left:8px;">v1.2.0</span></h2>
+  <h2>SyncFromNotion <span id="version-display"
+      style="font-size:10px; color:#888; font-weight:normal; margin-left:8px;">v1.2.0</span></h2>
 
   <div id="step-1" class="step-container">
     <div class="step-header">Step 1: 獲取數據</div>
@@ -152,14 +274,16 @@
   <div id="step-preview" class="step-container hidden">
     <div class="step-header">Step 1.5: 數據預覽</div>
     <p class="mb-8" style="color:#aaa">確認欄位與內容是否正確</p>
-    
+
     <!-- Navigation Bar -->
-    <div class="flex gap-8 mb-8" style="justify-content: space-between; align-items: center; background: #333; padding: 4px 8px; border-radius: 4px;">
+    <div class="flex gap-8 mb-8"
+      style="justify-content: space-between; align-items: center; background: #333; padding: 4px 8px; border-radius: 4px;">
       <button id="btn-prev-record" class="secondary" style="width: 30px; padding: 4px;">◀</button>
       <span id="preview-counter" style="font-size: 11px; color: #fff;">1 / --</span>
       <button id="btn-next-record" class="secondary" style="width: 30px; padding: 4px;">▶</button>
     </div>
-    <div id="preview-list" class="mb-16" style="max-height: 250px; overflow-y: auto; background: #222; padding: 8px; border: 1px solid #444; border-radius: 4px;">
+    <div id="preview-list" class="mb-16"
+      style="max-height: 250px; overflow-y: auto; background: #222; padding: 8px; border: 1px solid #444; border-radius: 4px;">
       <!-- Preview items -->
     </div>
     <div class="flex gap-8">
@@ -171,20 +295,21 @@
 
   <div id="step-2" class="step-container hidden">
     <div class="step-header">Step 2: 選擇組件 (Component)</div>
-    
-    <div class="mb-16 p-2 bg-gray-800 rounded border border-gray-700 hidden" id="selected-comp-info" style="background:#222; padding:8px; border:1px solid #444;">
+
+    <div class="mb-16 p-2 bg-gray-800 rounded border border-gray-700 hidden" id="selected-comp-info"
+      style="background:#222; padding:8px; border:1px solid #444;">
       <div style="font-weight:bold; margin-bottom:8px;" id="comp-name">--</div>
       <button id="btn-use-saved-comp" class="w-full secondary" style="font-size:11px; padding:6px;">
         ✅ 使用這個 Component
       </button>
     </div>
-    
+
     <button id="btn-read-selection" class="w-full secondary">🔍 讀取選中的 Component</button>
   </div>
 
   <div id="step-3" class="step-container hidden">
     <div class="step-header">Step 3: 映射欄位</div>
-    
+
     <div class="mb-16">
       <label>唯一 ID 欄位 (識別用)</label>
       <select id="id-field-select"></select>
@@ -194,1482 +319,1415 @@
     <div id="mapping-list">
       <!-- Mappings will be injected here -->
     </div>
-    
+
     <div class="flex gap-8 mt-4">
       <button id="btn-back-2" class="secondary">⬅️ 重新選擇 Component</button>
       <button id="btn-confirm-mapping" class="w-full secondary">✅ 確認映射</button>
     </div>
-    
+
     <button id="btn-sync" class="w-full" style="margin-top:8px;">🚀 開始同步 (Sync)</button>
-    
+
     <button id="btn-show-tools" class="w-full secondary" style="margin-top:8px;">
       🛠️ 工具：修改 Instance ID
     </button>
-    
+
     <!-- 进度日志显示区域 -->
     <div id="progress-log" class="hidden"></div>
   </div>
 
   <div id="tools-section" class="step-container hidden">
     <div class="step-header">🛠️ 工具</div>
-    
+
     <!-- 快速配置加载 -->
     <div style="margin-bottom:24px; padding-bottom:24px; border-bottom:1px solid #333;">
       <h3 style="font-size:12px; margin-bottom:8px;">⚡ 快速配置</h3>
-      <p style="color:#aaa; margin-bottom:12px; font-size:10px;">选中一个 Instance，自动加载其 Component 和映射配置</p>
-      
+      <p style="color:#aaa; margin-bottom:12px; font-size:10px;">選中一個物件，自動加載其 Template 同埋映射配置</p>
+
       <!-- 配置状态显示 -->
-      <div id="quick-config-status" class="hidden" style="background:#1a1a1a; border:1px solid #333; border-radius:4px; padding:8px; margin-bottom:12px;">
+      <div id="quick-config-status" class="hidden"
+        style="background:#1a1a1a; border:1px solid #333; border-radius:4px; padding:8px; margin-bottom:12px;">
         <div style="font-size:10px; color:#888; margin-bottom:4px;">当前配置:</div>
         <div id="quick-config-component" style="font-size:11px; color:#4dff88; margin-bottom:2px;">Component: --</div>
         <div id="quick-config-mappings" style="font-size:11px; color:#4da6ff;">映射: --</div>
         <div id="quick-config-data" style="font-size:11px; color:#ffb84d; margin-top:2px;">数据: --</div>
       </div>
-      
+
       <button id="btn-quick-load" class="w-full secondary">
-        ⚡ 从选中 Instance 加载配置
+        ⚡ 從選中物件加載配置
       </button>
     </div>
-    
-    <!-- 同步选中的 Instance -->
+
     <div style="margin-bottom:24px; padding-bottom:24px; border-bottom:1px solid #333;">
-      <h3 style="font-size:12px; margin-bottom:8px;">🔄 同步选中的 Instance</h3>
-      <p style="color:#aaa; margin-bottom:12px; font-size:10px;">只更新选中的 instance，不影响其他数据</p>
-      
+      <h3 style="font-size:12px; margin-bottom:8px;">🔄 同步選中的物件</h3>
+      <p style="color:#aaa; margin-bottom:12px; font-size:10px;">只更新選中的物件，唔影響其他數據</p>
+
       <button id="btn-sync-selected" class="w-full" disabled>
-        🔄 同步选中的 Instance
+        🔄 同步選中的物件
       </button>
     </div>
-    
+
     <!-- 修改 Instance ID -->
     <div>
-      <h3 style="font-size:12px; margin-bottom:8px;">✏️ 修改 Instance ID</h3>
-      <p style="color:#aaa; margin-bottom:12px; font-size:10px;">选中一个 Instance，修改其 Notion ID</p>
-    
-    <button id="btn-read-instance-id" class="w-full secondary mb-8">
-      📍 读取选中 Instance 的 ID
-    </button>
-    
-    <div id="current-id-display" class="hidden" style="margin-bottom:12px; padding:8px; background:#222; border:1px solid #444; border-radius:4px;">
-      <div style="font-size:10px; color:#888; margin-bottom:4px;">当前 ID:</div>
-      <div id="current-id-value" style="font-family:monospace; color:#4dff88; font-size:11px;"></div>
-      <div id="current-node-name" style="font-size:10px; color:#888; margin-top:4px;"></div>
+      <h3 style="font-size:12px; margin-bottom:8px;">✏️ 修改物件 ID</h3>
+      <p style="color:#aaa; margin-bottom:12px; font-size:10px;">選中一個物件，修改其 Notion ID</p>
+
+      <button id="btn-read-instance-id" class="w-full secondary mb-8">
+        📍 讀取選中物件的 ID
+      </button>
+
+      <div id="current-id-display" class="hidden"
+        style="margin-bottom:12px; padding:8px; background:#222; border:1px solid #444; border-radius:4px;">
+        <div style="font-size:10px; color:#888; margin-bottom:4px;">当前 ID:</div>
+        <div id="current-id-value" style="font-family:monospace; color:#4dff88; font-size:11px;"></div>
+        <div id="current-node-name" style="font-size:10px; color:#888; margin-top:4px;"></div>
+      </div>
+
+      <div class="mb-16">
+        <label>新的 Notion ID</label>
+        <input type="text" id="new-id-input" placeholder="输入新的 ID" />
+      </div>
+
+      <button id="btn-update-instance-id" class="w-full" disabled>
+        💾 更新 ID
+      </button>
+
+      <button id="btn-back-to-sync" class="w-full secondary" style="margin-top:8px;">
+        ⬅️ 返回同步
+      </button>
     </div>
-    
-    <div class="mb-16">
-      <label>新的 Notion ID</label>
-      <input type="text" id="new-id-input" placeholder="输入新的 ID" />
+
+    <div class="status-bar">
+      <div id="spinner" class="spinner hidden"></div>
+      <span id="status-text">就緒</span>
     </div>
-    
-    <button id="btn-update-instance-id" class="w-full" disabled>
-      💾 更新 ID
-    </button>
-    
-    <button id="btn-back-to-sync" class="w-full secondary" style="margin-top:8px;">
-      ⬅️ 返回同步
-    </button>
-  </div>
 
-  <div class="status-bar">
-    <div id="spinner" class="spinner hidden"></div>
-    <span id="status-text">就緒</span>
-  </div>
+    <script>
+      // --- State ---
+      let notionData = [];
+      let schemaKeys = [];
+      let componentLayers = [];
+      let currentComponentId = null;
+      let currentTemplateId = null; // [New] Specific ID for cloning/instantiating
+      let currentMappings = []; // [New] Store mappings for image sync phase
+      let currentPreviewIndex = 0;
 
-  <script>
-    // --- State ---
-    let notionData = [];
-    let schemaKeys = [];
-    let componentLayers = [];
-    let currentComponentId = null;
-    let currentMappings = []; // [New] Store mappings for image sync phase
-    let currentPreviewIndex = 0;
-
-    // --- Elements ---
-    const steps = {
-      1: document.getElementById('step-1'),
-      'preview': document.getElementById('step-preview'),
-      2: document.getElementById('step-2'),
-      3: document.getElementById('step-3'),
-      'tools': document.getElementById('tools-section')
-    };
-    const webhookInput = document.getElementById('webhook-url');
-    const btnFetch = document.getElementById('btn-fetch');
-    const btnPreviewNext = document.getElementById('btn-preview-next');
-    const btnPreviewBack = document.getElementById('btn-preview-back');
-    const previewList = document.getElementById('preview-list');
-    const btnReadSelection = document.getElementById('btn-read-selection');
-    const btnUseSavedComp = document.getElementById('btn-use-saved-comp');
-    const btnSync = document.getElementById('btn-sync');
-    const btnConfirmMapping = document.getElementById('btn-confirm-mapping');
-    const btnBack2 = document.getElementById('btn-back-2');
-    const mappingList = document.getElementById('mapping-list');
-    const idFieldSelect = document.getElementById('id-field-select');
-    const statusText = document.getElementById('status-text');
-    const spinner = document.getElementById('spinner');
-    
-    // Tools section elements
-    const btnSyncSelected = document.getElementById('btn-sync-selected');
-    const btnReadInstanceId = document.getElementById('btn-read-instance-id');
-    const btnUpdateInstanceId = document.getElementById('btn-update-instance-id');
-    const currentIdDisplay = document.getElementById('current-id-display');
-    const currentIdValue = document.getElementById('current-id-value');
-    const currentNodeName = document.getElementById('current-node-name');
-    const newIdInput = document.getElementById('new-id-input');
-
-    // Quick Config elements
-    const btnQuickLoad = document.getElementById('btn-quick-load');
-    const quickConfigStatus = document.getElementById('quick-config-status');
-    const quickConfigComponent = document.getElementById('quick-config-component');
-    const quickConfigMappings = document.getElementById('quick-config-mappings');
-    const quickConfigData = document.getElementById('quick-config-data');
-    
-    // --- Helpers (Defined early) ---
-    function setStatus(type, msg) {
-      statusText.textContent = msg;
-      statusText.className = type;
-      spinner.classList.toggle('hidden', type !== 'loading');
-      if (type === 'error') statusText.style.color = '#ff4d4d';
-      else if (type === 'success') statusText.style.color = '#4dff88';
-      else statusText.style.color = '#999';
-    }
-
-    // 进度日志函数
-    const progressLog = document.getElementById('progress-log');
-    const MAX_LOG_ENTRIES = 50; // 最多保留50条日志
-    
-    function addLog(message, type = 'info') {
-      // 显示日志区域
-      progressLog.classList.remove('hidden');
-      
-      // 创建日志条目
-      const entry = document.createElement('div');
-      entry.className = `log-entry ${type}`;
-      
-      // 添加时间戳
-      const now = new Date();
-      const timestamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-      entry.textContent = `[${timestamp}] ${message}`;
-      
-      // 添加到日志区域
-      progressLog.appendChild(entry);
-      
-      // 限制日志条目数量
-      while (progressLog.children.length > MAX_LOG_ENTRIES) {
-        progressLog.removeChild(progressLog.firstChild);
-      }
-      
-      // 自动滚动到底部
-      progressLog.scrollTop = progressLog.scrollHeight;
-    }
-    
-    function clearLog() {
-      progressLog.innerHTML = '';
-      progressLog.classList.add('hidden');
-    }
-
-
-    function showStep(step) {
-      Object.keys(steps).forEach(k => steps[k].classList.add('hidden'));
-      if (steps[step]) {
-        steps[step].classList.remove('hidden');
-      }
-      
-      // 当进入工具区时，检查是否有配置可用
-      if (step === 'tools') {
-        // 如果已有 component 和 mappings，启用同步选中按钮
-        if (currentComponentId && currentMappings && currentMappings.length > 0 && notionData && notionData.length > 0) {
-          if (btnSyncSelected) {
-            btnSyncSelected.disabled = false;
-          }
-          
-          // 更新状态显示
-          if (quickConfigStatus && !quickConfigStatus.classList.contains('hidden')) {
-            // 状态已显示，保持
-          } else {
-            // 尝试从 storage 加载并显示提示
-            loadStorage('last_component_id').then(savedId => {
-              if (savedId && selectedCompInfo) {
-                const compNameEl = document.getElementById('comp-name');
-                if (compNameEl && compNameEl.textContent !== '--') {
-                  // 在工具区提示可以使用快速加载
-                  setStatus('info', '提示：可以使用"从选中 Instance 加载配置"或已有配置直接同步');
-                }
-              }
-            });
-          }
-        } else {
-          // 无配置，显示提示
-          setStatus('info', '请先加载配置或完成 Step 1-3');
-        }
-      }
-    }
-
-    // --- Actions ---
-
-    // Step 1: Fetch Data
-    
-    async function fetchData() {
-       const url = webhookInput.value.trim();
-       if (!url) {
-         setStatus('error', '請輸入 URL');
-         return false;
-       }
-       
-       setStatus('loading', '正在拉取數據...');
-       btnFetch.disabled = true;
-
-       try {
-         const resp = await fetch(url);
-         if (!resp.ok) throw new Error('HTTP ' + resp.status);
-         let data = await resp.json();
-         
-         // Smart extract array
-         if (!Array.isArray(data)) {
-           const extracted = extractArray(data);
-           if (extracted) {
-             data = extracted;
-           } else {
-             const preview = JSON.stringify(data).substring(0, 100);
-             throw new Error(`未找到數據陣列。收到: ${preview}...`);
-           }
-         }
-
-         if (data.length === 0) throw new Error('陣列為空 (0 items)');
-
-         // 差異對比 (Smart logic)
-         const creatingCount = data.length;
-         // TODO: Check existing IDs if possible, but for now just show count
-         
-         notionData = data;
-         // Extract all unique keys from first few records
-         const allKeys = new Set();
-         data.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
-         schemaKeys = Array.from(allKeys);
-
-         setStatus('success', `成功獲取 ${data.length} 筆數據`);
-         
-         // Save to cache (Async)
-         saveStorage('cached_data', JSON.stringify(data));
-
-         // Render Preview
-         renderPreview(0);
-         showStep('preview');
-         return true;
-
-       } catch (e) {
-         setStatus('error', '失敗: ' + e.message);
-         return false;
-       } finally {
-         btnFetch.disabled = false;
-       }
-    }
-
-    btnFetch.onclick = fetchData;
-
-    // Step 1.5 Preview Actions
-    const btnPreviewRefresh = document.getElementById('btn-preview-refresh');
-    
-    btnPreviewNext.onclick = () => showStep(2);
-    btnPreviewBack.onclick = () => showStep(1);
-    btnPreviewRefresh.onclick = () => btnFetch.click();
-
-    // Step 2: Read Component
-    btnReadSelection.onclick = () => {
-      console.log('Sending get-component-layers message...');
-      parent.postMessage({ pluginMessage: { type: 'get-component-layers' } }, '*');
-      setStatus('loading', '正在讀取 Component...');
-    };
-    
-    // Step 2: Use Saved Component
-    if (btnUseSavedComp) {
-      btnUseSavedComp.onclick = async () => {
-        setStatus('loading', '正在加载保存的 Component...');
-        
-        const savedComponentId = await loadStorage('last_component_id');
-        if (!savedComponentId) {
-          setStatus('error', '未找到保存的 Component');
-          return;
-        }
-        
-        parent.postMessage({ 
-          pluginMessage: { 
-            type: 'restore-component',
-            componentId: savedComponentId
-          } 
-        }, '*');
+      // --- Elements ---
+      const steps = {
+        1: document.getElementById('step-1'),
+        'preview': document.getElementById('step-preview'),
+        2: document.getElementById('step-2'),
+        3: document.getElementById('step-3'),
+        'tools': document.getElementById('tools-section')
       };
-    }
+      const webhookInput = document.getElementById('webhook-url');
+      const btnFetch = document.getElementById('btn-fetch');
+      const btnPreviewNext = document.getElementById('btn-preview-next');
+      const btnPreviewBack = document.getElementById('btn-preview-back');
+      const previewList = document.getElementById('preview-list');
+      const btnReadSelection = document.getElementById('btn-read-selection');
+      const btnUseSavedComp = document.getElementById('btn-use-saved-comp');
+      const btnSync = document.getElementById('btn-sync');
+      const btnConfirmMapping = document.getElementById('btn-confirm-mapping');
+      const btnBack2 = document.getElementById('btn-back-2');
+      const mappingList = document.getElementById('mapping-list');
+      const idFieldSelect = document.getElementById('id-field-select');
+      const statusText = document.getElementById('status-text');
+      const spinner = document.getElementById('spinner');
 
-    // Step 3 Back
-    btnBack2.onclick = () => showStep(2);
-    
-    // Step 3: Confirm Mapping (保存映射配置)
-    if (btnConfirmMapping) {
-      btnConfirmMapping.onclick = async () => {
-        console.log('点击确认映射按钮');
-        
-        // 收集映射
-        const mappings = [];
-        const items = document.querySelectorAll('.mapping-item');
-        
-        items.forEach(item => {
-          const layerNameEl = item.querySelector('.layer-name');
-          const fieldSelect = item.querySelector('.field-select');
-          const typeSelect = item.querySelector('.type-select');
-          
-          // 添加 null 检查
-          if (!layerNameEl || !fieldSelect || !typeSelect) {
-            console.warn('映射项缺少必要元素', item);
-            return;
-          }
-          
-          if (fieldSelect.value) {
-            mappings.push({
-              layerName: layerNameEl.textContent,
-              notionField: fieldSelect.value,
-              dataType: typeSelect.value
-            });
-          }
-        });
-        
-        if (mappings.length === 0) {
-          setStatus('warning', '至少需要設置一個映射');
-          return;
+      // Tools section elements
+      const btnSyncSelected = document.getElementById('btn-sync-selected');
+      const btnReadInstanceId = document.getElementById('btn-read-instance-id');
+      const btnUpdateInstanceId = document.getElementById('btn-update-instance-id');
+      const currentIdDisplay = document.getElementById('current-id-display');
+      const currentIdValue = document.getElementById('current-id-value');
+      const currentNodeName = document.getElementById('current-node-name');
+      const newIdInput = document.getElementById('new-id-input');
+
+      // Quick Config elements
+      const btnQuickLoad = document.getElementById('btn-quick-load');
+      const quickConfigStatus = document.getElementById('quick-config-status');
+      const quickConfigComponent = document.getElementById('quick-config-component');
+      const quickConfigMappings = document.getElementById('quick-config-mappings');
+      const quickConfigData = document.getElementById('quick-config-data');
+
+      // --- Helpers (Defined early) ---
+      function setStatus(type, msg) {
+        statusText.textContent = msg;
+        statusText.className = type;
+        spinner.classList.toggle('hidden', type !== 'loading');
+        if (type === 'error') statusText.style.color = '#ff4d4d';
+        else if (type === 'success') statusText.style.color = '#4dff88';
+        else statusText.style.color = '#999';
+      }
+
+      // 进度日志函数
+      const progressLog = document.getElementById('progress-log');
+      const MAX_LOG_ENTRIES = 50; // 最多保留50条日志
+
+      function addLog(message, type = 'info') {
+        // 显示日志区域
+        progressLog.classList.remove('hidden');
+
+        // 创建日志条目
+        const entry = document.createElement('div');
+        entry.className = `log-entry ${type}`;
+
+        // 添加时间戳
+        const now = new Date();
+        const timestamp = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+        entry.textContent = `[${timestamp}] ${message}`;
+
+        // 添加到日志区域
+        progressLog.appendChild(entry);
+
+        // 限制日志条目数量
+        while (progressLog.children.length > MAX_LOG_ENTRIES) {
+          progressLog.removeChild(progressLog.firstChild);
         }
-        
-        // 保存 ID 字段
-        const idField = idFieldSelect.value;
-        
-        // 保存映射配置（使用对象格式，与完整同步一致）
-        const mappingData = {
-          mappings: mappings,
-          idField: idField
-        };
-        
-        currentMappings = mappings;
-        await saveStorage('mapping_' + currentComponentId, mappingData);
-        
-        console.log('[确认映射] 保存映射配置:', mappingData);
-        
-        // 启用同步选中按钮（如果在工具区）
-        if (btnSyncSelected && notionData && notionData.length > 0) {
-          btnSyncSelected.disabled = false;
+
+        // 自动滚动到底部
+        progressLog.scrollTop = progressLog.scrollHeight;
+      }
+
+      function clearLog() {
+        progressLog.innerHTML = '';
+        progressLog.classList.add('hidden');
+      }
+
+
+      function showStep(step) {
+        Object.keys(steps).forEach(k => steps[k].classList.add('hidden'));
+        if (steps[step]) {
+          steps[step].classList.remove('hidden');
         }
-        
-        setStatus('success', `✅ 映射已確認並保存 (${mappings.length} 條規則)`);
-        console.log('映射已保存:', mappings);
-        
-        // 可选：显示成功提示并提供选项
-        setTimeout(() => {
-          setStatus('success', '映射已保存！可以進入「工具」使用快速同步');
-        }, 1500);
-      };
-    }
-    
-    // Show Tools
-    const btnShowTools = document.getElementById('btn-show-tools');
-    if (btnShowTools) {
-      btnShowTools.onclick = () => showStep('tools');
-    }
-    
-    // Back to Sync from Tools
-    const btnBackToSync = document.getElementById('btn-back-to-sync');
-    if (btnBackToSync) {
-      btnBackToSync.onclick = () => showStep(3);
-    }
-    
-    // Quick Load Configuration
-    if (btnQuickLoad) {
-      btnQuickLoad.onclick = async () => {
-        try {
-          clearLog();
-          setStatus('loading', '正在加载配置...');
-          addLog('⚡ 从选中 Instance 加载配置', 'info');
-          
-          // 1. 检查 Notion 数据
-          if (!notionData || notionData.length === 0) {
-            setStatus('error', '请先拉取 Notion 数据');
-            addLog('❌ 未找到 Notion 数据，请先拉取', 'error');
-            return;
-          }
-          
-          // 2. 发送加载请求到后端（从选中的 instance 获取 component）
-          const loadResult = await new Promise((resolve) => {
-            const handler = (e) => {
-              const msg = e.data.pluginMessage;
-              if (msg && (msg.type === 'component-data' || msg.type === 'error')) {
-                window.removeEventListener('message', handler);
-                resolve(msg);
-              }
-            };
-            window.addEventListener('message', handler);
-            parent.postMessage({ 
-              pluginMessage: { 
-                type: 'load-from-selection'
-              } 
-            }, '*');
-            
-            // Timeout
-            setTimeout(() => {
-              window.removeEventListener('message', handler);
-              resolve({ type: 'error', message: '加载超时' });
-            }, 3000);
-          });
-          
-          if (loadResult.type === 'error') {
-            setStatus('error', loadResult.message);
-            addLog(`❌ ${loadResult.message}`, 'error');
-            return;
-          }
-          
-          addLog(`✅ 找到 Component: ${loadResult.componentName}`, 'success');
-          
-          // 3. 加载该 component 的映射配置
-          const savedData = await loadStorage('mapping_' + loadResult.componentId);
-          let mappings = [];
-          let idField = Object.keys(notionData[0] || {})[0];
-          
-          console.log('[快速加载] 尝试加载映射，key:', 'mapping_' + loadResult.componentId);
-          console.log('[快速加载] 读取到的映射数据:', savedData);
-          
-          if (savedData) {
-            // 处理对象格式 {mappings: [...], idField: '...'}
-            if (savedData.mappings && Array.isArray(savedData.mappings)) {
-              mappings = savedData.mappings;
-              idField = savedData.idField || idField;
-              console.log('[快速加载] 解析映射成功:', mappings);
-              addLog(`加载映射配置: ${mappings.length} 条规则`, 'success');
+
+        // 当进入工具区时，检查是否有配置可用
+        if (step === 'tools') {
+          // 如果已有 component 和 mappings，启用同步选中按钮
+          if (currentComponentId && currentMappings && currentMappings.length > 0 && notionData && notionData.length > 0) {
+            if (btnSyncSelected) {
+              btnSyncSelected.disabled = false;
+            }
+
+            // 更新状态显示
+            if (quickConfigStatus && !quickConfigStatus.classList.contains('hidden')) {
+              // 状态已显示，保持
             } else {
-              console.warn('[快速加载] 映射数据格式不正确', savedData);
-              addLog('⚠️ 映射配置格式错误', 'error');
+              // 尝试从 storage 加载并显示提示
+              loadStorage('last_component_id').then(savedId => {
+                if (savedId && selectedCompInfo) {
+                  const compNameEl = document.getElementById('comp-name');
+                  if (compNameEl && compNameEl.textContent !== '--') {
+                    // 在工具区提示可以使用快速加载
+                    setStatus('info', '提示：可以使用"从选中 Instance 加载配置"或已有配置直接同步');
+                  }
+                }
+              });
             }
           } else {
-            console.warn('[快速加载] 未找到映射配置');
-            addLog('⚠️ 未找到保存的映射配置', 'warning');
+            // 无配置，显示提示
+            setStatus('info', '请先加载配置或完成 Step 1-3');
           }
-          
-          if (mappings.length === 0) {
-            addLog('提示：请先在 Step 3 设置并确认映射', 'info');
-          }
-          
-          // 4. 设置全局变量
-          currentComponentId = loadResult.componentId;
-          currentMappings = mappings;
-          componentLayers = loadResult.layers;
-
-          // 4.1 Update Mapping UI in background (so Step 3 is correct if visited)
-          try {
-            renderMappingUI(componentLayers);
-            const compNameEl = document.getElementById('comp-name');
-            if (compNameEl) compNameEl.textContent = loadResult.componentName;
-            const infoEl = document.getElementById('selected-comp-info');
-            if (infoEl) infoEl.classList.remove('hidden');
-          } catch (e) {
-            console.warn('Background UI update failed:', e);
-          }
-          
-          // 5. 更新状态显示
-          quickConfigStatus.classList.remove('hidden');
-          quickConfigComponent.textContent = `Component: ${loadResult.componentName}`;
-          quickConfigMappings.textContent = `映射: ${mappings.length} 条规则${mappings.length === 0 ? ' ⚠️' : ''}`;
-          quickConfigData.textContent = `数据: ${notionData.length} 条记录`;
-          
-          // 6. 启用同步选中按钮（如果有映射）
-          if (mappings.length > 0) {
-            btnSyncSelected.disabled = false;
-            setStatus('success', '配置加载成功！');
-            addLog('✅ 配置加载完成，可以使用"同步选中"功能', 'success');
-          } else {
-            btnSyncSelected.disabled = true;
-            setStatus('warning', 'Component 已加载，但未找到映射配置');
-            addLog('提示：请先完成 Step 1-3 创建映射配置', 'info');
-          }
-          
-        } catch (e) {
-          console.error('快速加载失败:', e);
-          setStatus('error', '加载配置失败');
-          addLog(`❌ 加载失败: ${e.message}`, 'error');
-        }
-      };
-    }
-
-    // === Tools Section: Instance ID Management ===
-    
-    // Sync Selected Instances
-    if (btnSyncSelected) {
-      btnSyncSelected.onclick = () => {
-        // 清空日志
-        clearLog();
-        
-        // 验证是否已经完成配置
-        if (!currentComponentId || currentMappings.length === 0) {
-          setStatus('error', '请先加载配置（点击"使用上次配置"）或完成完整同步流程');
-          addLog('❌ 未找到配置信息', 'error');
-          addLog('提示：点击"⚡ 使用上次配置"或返回完成 Step 1-3', 'warning');
-          return;
-        }
-        
-        if (!notionData || notionData.length === 0) {
-          setStatus('error', '请先拉取 Notion 数据');
-          addLog('❌ 未找到 Notion 数据', 'error');
-          return;
-        }
-        
-        // 发送同步选中的请求
-        parent.postMessage({ 
-          pluginMessage: { 
-            type: 'sync-selected',
-            componentId: currentComponentId,
-            mappings: currentMappings,
-            idField: idFieldSelect.value,
-            notionData: notionData
-          } 
-        }, '*');
-        setStatus('loading', '正在同步选中的 Instance...');
-        btnSyncSelected.disabled = true;
-      };
-    }
-    
-    // Read Instance ID
-    btnReadInstanceId.onclick = () => {
-      parent.postMessage({ pluginMessage: { type: 'read-instance-id' } }, '*');
-      setStatus('loading', '正在读取 Instance ID...');
-    };
-    
-    // Update Instance ID
-    btnUpdateInstanceId.onclick = () => {
-      const newId = newIdInput.value.trim();
-      if (!newId) {
-        setStatus('error', '请输入新的 ID');
-        return;
-      }
-      
-      parent.postMessage({ 
-        pluginMessage: { 
-          type: 'update-instance-id', 
-          newId: newId 
-        } 
-      }, '*');
-      setStatus('loading', '正在更新 ID...');
-    };
-    
-    // Enable update button when new ID is entered
-    newIdInput.oninput = () => {
-      btnUpdateInstanceId.disabled = !newIdInput.value.trim();
-    };
-
-    // ... existing code ...
-
-    function extractArray(obj) {
-      if (typeof obj !== 'object' || obj === null) return null;
-      
-      // 1. Try common keys
-      const keys = ['data', 'results', 'items', 'records', 'rows', 'list', 'entries', 'json', 'body'];
-      for (const k of keys) {
-        const val = obj[k];
-        if (Array.isArray(val)) return val;
-        // Handle stringified JSON (common in some webhooks)
-        if (typeof val === 'string') {
-          try {
-            const parsed = JSON.parse(val);
-            if (Array.isArray(parsed)) return parsed;
-          } catch {}
         }
       }
-      
-      // 2. Iterate all keys if strict common keys didn't work
-      for (const k of Object.keys(obj)) {
-        const val = obj[k];
-        if (Array.isArray(val)) return val;
-        if (typeof val === 'string') {
-          try {
-            const parsed = JSON.parse(val);
-            if (Array.isArray(parsed)) return parsed;
-          } catch {}
-        }
-      }
-      
-      return null;
-    }
 
-    function renderMappingUI(layers) {
-      mappingList.innerHTML = '';
-      
-      // Populate ID Select
-      idFieldSelect.innerHTML = '';
-      schemaKeys.forEach(key => {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = key;
-        if (key.toLowerCase() === 'id') opt.selected = true;
-        idFieldSelect.appendChild(opt);
-      });
+      // --- Actions ---
 
-      // Populate Layer Mappings
-      layers.forEach(layer => {
-        const div = document.createElement('div');
-        div.className = 'mapping-item';
-        div.dataset.layer = layer.name;
-        div.dataset.type = layer.type;
+      // Step 1: Fetch Data
 
-        let icon = layer.type === 'TEXT' ? 'T' : '🖼️';
-        
-        // Auto-match logic
-        let selectedField = '__ignore__'; // Initialize to ignore
-
-        // Try exact match or match without '#' prefix
-        const cleanName = layer.name.replace(/^#/, '');
-        if (schemaKeys.includes(layer.name)) {
-           selectedField = layer.name;
-        } else if (schemaKeys.includes(cleanName)) {
-           selectedField = cleanName;
+      async function fetchData() {
+        const url = webhookInput.value.trim();
+        if (!url) {
+          setStatus('error', '請輸入 URL');
+          return false;
         }
 
-        const optionsHtml = schemaKeys.map(k => 
-          `<option value="${k}" ${k === selectedField ? 'selected' : ''}>${k}</option>`
-        ).join('');
+        setStatus('loading', '正在拉取數據...');
+        btnFetch.disabled = true;
 
-        div.innerHTML = `
-          <div class="layer-info">
-            <span class="layer-icon">${icon}</span>
-            <span class="layer-name">${layer.name}</span>
-            <span class="layer-type">${layer.type}</span>
-          </div>
-          <select data-dtype="${layer.type === 'TEXT' ? 'text' : 'image'}">
-            <option value="__ignore__">-- 忽略 --</option>
-            ${optionsHtml}
-          </select>
-        `;
-        mappingList.appendChild(div);
-      });
-    }
-
-    // Step 4: Sync
-    btnSync.onclick = () => {
-      console.log('點擊同步按鈕');
-      
-      // 清空并显示日志区域
-      clearLog();
-      addLog('🚀 开始同步任务', 'info');
-      
-      setStatus('loading', '準備同步...');
-      const mappings = [];
-      
-      const items = document.querySelectorAll('.mapping-item');
-      console.log(`找到 ${items.length} 個映射項目`);
-      addLog(`找到 ${items.length} 个映射项目`, 'info');
-
-      items.forEach(item => {
-        const layerName = item.dataset.layer;
-        const layerType = item.dataset.type;
-        const select = item.querySelector('select');
-        const dataField = select.value;
-        
-        if (dataField && dataField !== '__ignore__') {
-          // 改进判断：TEXT 是文字，其他都视为图片（包括 RECTANGLE, ELLIPSE, FRAME等）
-          const dataType = layerType === 'TEXT' ? 'text' : 'image';
-          console.log(`[Mapping] ${layerName} (${layerType}) → ${dataField} [${dataType}]`);
-          mappings.push({ layerName, dataField, dataType });
-        }
-      });
-
-      console.log('生成的映射規則:', mappings);
-      addLog(`生成 ${mappings.length} 条映射规则`, 'success');
-
-      if (mappings.length === 0) {
-        console.warn('映射規則為空');
-        addLog('❌ 映射规则为空', 'error');
-        return setStatus('error', '請至少設定一個映射欄位');
-      }
-
-      const idField = idFieldSelect.value;
-      console.log('ID Field:', idField);
-      addLog(`使用 ID 字段: ${idField}`, 'info');
-
-      parent.postMessage({ 
-        pluginMessage: { 
-          type: 'sync-mapped-data',
-          componentId: currentComponentId,
-          data: notionData,
-          mappings,
-          idField
-        } 
-      }, '*');
-      
-      // 保存 mappings 供后续使用（例如：同步选中功能、图片同步）
-      saveStorage('mapping_' + currentComponentId, JSON.stringify(mappings));
-      currentMappings = mappings; // Store for later use
-      
-      console.log('已發送 sync-mapped-data 訊息');
-      addLog(`📤 发送同步数据 (${notionData.length} 条记录)`, 'info');
-      setStatus('loading', '正在同步數據... (請稍候)');
-    };
-
-    // 带重试机制的图片下载
-    async function fetchWithRetry(url, retries = 3) {
-      let lastError;
-      for (let i = 0; i < retries; i++) {
         try {
-          const response = await fetch(url);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          return response;
+          const resp = await fetch(url);
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+          let data = await resp.json();
+
+          // Smart extract array
+          if (!Array.isArray(data)) {
+            const extracted = extractArray(data);
+            if (extracted) {
+              data = extracted;
+            } else {
+              const preview = JSON.stringify(data).substring(0, 100);
+              throw new Error(`未找到數據陣列。收到: ${preview}...`);
+            }
+          }
+
+          if (data.length === 0) throw new Error('陣列為空 (0 items)');
+
+          // 差異對比 (Smart logic)
+          const creatingCount = data.length;
+          // TODO: Check existing IDs if possible, but for now just show count
+
+          notionData = data;
+          // Extract all unique keys from first few records
+          const allKeys = new Set();
+          data.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+          schemaKeys = Array.from(allKeys);
+
+          setStatus('success', `成功獲取 ${data.length} 筆數據`);
+
+          // Save to cache (Async)
+          saveStorage('cached_data', JSON.stringify(data));
+
+          // Render Preview
+          renderPreview(0);
+          showStep('preview');
+          return true;
+
         } catch (e) {
-          lastError = e;
-          console.warn(`[图片下载] 第 ${i + 1} 次尝试失败:`, e.message);
-          if (i < retries - 1) {
-            // 等待后重试，延迟递增
-            await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
-          }
+          setStatus('error', '失敗: ' + e.message);
+          return false;
+        } finally {
+          btnFetch.disabled = false;
         }
       }
-      throw lastError;
-    }
 
-    /**
-     * 压缩图片以符合 Figma 的大小限制
-     * Figma 限制: 最大 4096x4096 像素，建议文件大小不超过 4MB
-     * Figma 不支持 WEBP，会自动转换为 PNG
-     */
-    async function compressImage(arrayBuffer) {
-      const MAX_DIMENSION = 4096;
-      const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
-      
-      // 检测原始图片格式
-      const bytes = new Uint8Array(arrayBuffer);
-      let originalFormat = 'jpeg'; // 默认
-      let outputFormat = 'image/jpeg'; // 输出格式
-      
-      // 检测图片格式通过文件头（magic bytes）
-      if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
-        originalFormat = 'png';
-        outputFormat = 'image/png';
-      } else if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
-        originalFormat = 'jpeg';
-        outputFormat = 'image/jpeg';
-      } else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
-        originalFormat = 'webp';
-        outputFormat = 'image/png'; // WEBP 转换为 PNG，因为 Figma 不支持 WEBP
-        console.log(`[图片压缩] 检测到 WEBP 格式，将转换为 PNG`);
-      }
-      
-      console.log(`[图片压缩] 原始格式: ${originalFormat}, 输出格式: ${outputFormat}`);
-      
-      // WEBP 必须转换为 PNG，即使文件很小
-      const needsConversion = originalFormat === 'webp';
-      const needsCompression = arrayBuffer.byteLength > MAX_FILE_SIZE;
-      
-      // 如果文件已经很小且不需要格式转换，直接返回
-      if (!needsConversion && !needsCompression) {
-        console.log(`[图片压缩] 原始大小: ${(arrayBuffer.byteLength / 1024).toFixed(1)}KB，无需处理`);
-        return new Uint8Array(arrayBuffer);
-      }
-      
-      if (needsConversion && !needsCompression) {
-        console.log(`[图片压缩] 需要格式转换但无需压缩`);
-      } else if (needsCompression) {
-        console.log(`[图片压缩] 原始大小: ${(arrayBuffer.byteLength / 1024).toFixed(1)}KB，开始处理...`);
-      }
-      
-      return new Promise((resolve, reject) => {
-        // 使用原始格式创建 blob 以便正确加载图片
-        const originalMimeType = originalFormat === 'png' ? 'image/png' : 
-                                 originalFormat === 'jpeg' ? 'image/jpeg' : 
-                                 'image/webp';
-        const blob = new Blob([arrayBuffer], { type: originalMimeType });
-        const img = new Image();
-        const url = URL.createObjectURL(blob);
-        
-        img.onload = () => {
-          URL.revokeObjectURL(url);
-          
-          let width = img.width;
-          let height = img.height;
-          
-          // 计算缩放比例
-          let scale = 1;
-          if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-            scale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
-            width = Math.floor(width * scale);
-            height = Math.floor(height * scale);
-            console.log(`[图片压缩] 原始尺寸: ${img.width}x${img.height}, 缩放至: ${width}x${height}`);
+      btnFetch.onclick = fetchData;
+
+      // Step 1.5 Preview Actions
+      const btnPreviewRefresh = document.getElementById('btn-preview-refresh');
+
+      btnPreviewNext.onclick = () => showStep(2);
+      btnPreviewBack.onclick = () => showStep(1);
+      btnPreviewRefresh.onclick = () => btnFetch.click();
+
+      // Step 2: Read Component
+      btnReadSelection.onclick = () => {
+        console.log('Sending get-component-layers message...');
+        parent.postMessage({ pluginMessage: { type: 'get-component-layers' } }, '*');
+        setStatus('loading', '正在讀取 Component...');
+      };
+
+      // Step 2: Use Saved Component
+      if (btnUseSavedComp) {
+        btnUseSavedComp.onclick = async () => {
+          setStatus('loading', '正在加载保存的 Component...');
+
+          const savedComponentId = await loadStorage('last_component_id');
+          if (!savedComponentId) {
+            setStatus('error', '未找到保存的 Component');
+            return;
           }
-          
-          // 创建 Canvas 进行处理
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          // PNG 使用质量 1.0（无损），JPEG 使用递减质量
-          let quality = outputFormat === 'image/png' ? 1.0 : 0.9;
-          
-          const tryCompress = () => {
-            canvas.toBlob(async (blob) => {
-              if (!blob) {
-                reject(new Error('处理失败'));
-                return;
-              }
-              
-              // 如果是 JPEG 且文件仍然太大，降低质量
-              if (outputFormat === 'image/jpeg' && blob.size > MAX_FILE_SIZE && quality > 0.3) {
-                quality -= 0.1;
-                console.log(`[图片压缩] 当前大小: ${(blob.size / 1024).toFixed(1)}KB，降低质量至 ${(quality * 100).toFixed(0)}%`);
-                tryCompress();
-                return;
-              }
-              
-              const finalBuffer = await blob.arrayBuffer();
-              console.log(`[图片压缩] 处理完成: ${(finalBuffer.byteLength / 1024).toFixed(1)}KB (格式: ${outputFormat}${outputFormat === 'image/jpeg' ? `, 质量: ${(quality * 100).toFixed(0)}%` : ''})`);
-              resolve(new Uint8Array(finalBuffer));
-            }, outputFormat, quality);
+
+          parent.postMessage({
+            pluginMessage: {
+              type: 'restore-component',
+              componentId: savedComponentId
+            }
+          }, '*');
+        };
+      }
+
+      // Step 3 Back
+      btnBack2.onclick = () => showStep(2);
+
+      // Step 3: Confirm Mapping (保存映射配置)
+      if (btnConfirmMapping) {
+        btnConfirmMapping.onclick = async () => {
+          console.log('点击确认映射按钮');
+
+          // 收集映射
+          const mappings = [];
+          const items = document.querySelectorAll('.mapping-item');
+
+          items.forEach(item => {
+            const layerNameEl = item.querySelector('.layer-name');
+            const fieldSelect = item.querySelector('.field-select');
+            const typeSelect = item.querySelector('.type-select');
+
+            // 添加 null 检查
+            if (!layerNameEl || !fieldSelect || !typeSelect) {
+              console.warn('映射项缺少必要元素', item);
+              return;
+            }
+
+            if (fieldSelect.value) {
+              mappings.push({
+                layerName: layerNameEl.textContent,
+                dataField: fieldSelect.value, // Changed from notionField to match loading logic
+                dataType: typeSelect.value
+              });
+            }
+          });
+
+          if (mappings.length === 0) {
+            setStatus('warning', '至少需要設置一個映射');
+            return;
+          }
+
+          // 保存 ID 字段
+          const idField = idFieldSelect.value;
+
+          // 保存映射配置（使用对象格式，与完整同步一致）
+          const mappingData = {
+            mappings: mappings,
+            idField: idField
           };
-          
-          tryCompress();
-        };
-        
-        img.onerror = () => {
-          URL.revokeObjectURL(url);
-          reject(new Error('图片加载失败'));
-        };
-        
-        img.src = url;
-      });
-    }
 
-    async function downloadAndSendImages(mappings, selectedNotionIds = null, forceUpdate = false) {
-      console.log('[图片同步] 开始处理图片，mappings:', mappings);
-      console.log('[图片同步] 选中的Notion IDs:', selectedNotionIds);
-      console.log('[图片同步] 强制更新模式:', forceUpdate);
-      addLog('🖼️ 开始图片同步', 'info');
-      
-      // 1. Get List of Notion IDs to process
-      let notionIds;
-      if (selectedNotionIds && selectedNotionIds.length > 0) {
-        // 只处理选中的instance
-        notionIds = selectedNotionIds;
-        addLog(`只处理选中的 ${notionIds.length} 个 instance 的图片`, 'info');
-        if (forceUpdate) {
-          addLog('⚡ 强制更新模式：跳过URL比较，直接下载所有图片', 'info');
-        }
-      } else {
-        // 处理所有数据
-        notionIds = notionData.map((item, i) => String(item[idFieldSelect.value] || `row-${i}`));
+          currentMappings = mappings;
+          await saveStorage('mapping_' + currentComponentId, mappingData);
+
+          console.log('[确认映射] 保存映射配置:', mappingData);
+
+          // 启用同步选中按钮（如果在工具区）
+          if (btnSyncSelected && notionData && notionData.length > 0) {
+            btnSyncSelected.disabled = false;
+          }
+
+          setStatus('success', `✅ 映射已確認並保存 (${mappings.length} 條規則)`);
+          console.log('映射已保存:', mappings);
+
+          // 可选：显示成功提示并提供选项
+          setTimeout(() => {
+            setStatus('success', '映射已保存！可以進入「工具」使用快速同步');
+          }, 1500);
+        };
       }
-      console.log('[图片同步] 处理的 Notion IDs:', notionIds);
-      
-      setStatus('loading', '正在檢查現有圖片...');
-      addLog('正在检查现有图片...', 'info');
-      
-      // 2. Ask Backend for existing URLs
-      // Wrap in Promise to wait for response
-      const existingUrls = await new Promise((resolve) => {
-        const handler = (e) => {
-          const msg = e.data.pluginMessage;
-          if (msg && msg.type === 'image-urls') {
-            window.removeEventListener('message', handler);
-            resolve(msg.urls || {});
+
+      // Show Tools
+      const btnShowTools = document.getElementById('btn-show-tools');
+      if (btnShowTools) {
+        btnShowTools.onclick = () => showStep('tools');
+      }
+
+      // Back to Sync from Tools
+      const btnBackToSync = document.getElementById('btn-back-to-sync');
+      if (btnBackToSync) {
+        btnBackToSync.onclick = () => showStep(3);
+      }
+
+      // Quick Load Configuration
+      if (btnQuickLoad) {
+        btnQuickLoad.onclick = async () => {
+          try {
+            clearLog();
+            setStatus('loading', '正在加载配置...');
+            addLog('⚡ 从选中 Instance 加载配置', 'info');
+
+            // 1. 检查 Notion 数据
+            if (!notionData || notionData.length === 0) {
+              setStatus('error', '请先拉取 Notion 数据');
+              addLog('❌ 未找到 Notion 数据，请先拉取', 'error');
+              return;
+            }
+
+            // 2. 发送加载请求到后端（从选中的 instance 获取 component）
+            const loadResult = await new Promise((resolve) => {
+              const handler = (e) => {
+                const msg = e.data.pluginMessage;
+                if (msg && (msg.type === 'component-data' || msg.type === 'error')) {
+                  window.removeEventListener('message', handler);
+                  resolve(msg);
+                }
+              };
+              window.addEventListener('message', handler);
+              parent.postMessage({
+                pluginMessage: {
+                  type: 'load-from-selection'
+                }
+              }, '*');
+
+              // Timeout
+              setTimeout(() => {
+                window.removeEventListener('message', handler);
+                resolve({ type: 'error', message: '加载超时' });
+              }, 3000);
+            });
+
+            if (loadResult.type === 'error') {
+              setStatus('error', loadResult.message);
+              addLog(`❌ ${loadResult.message}`, 'error');
+              return;
+            }
+
+            addLog(`✅ 找到 Component: ${loadResult.componentName}`, 'success');
+
+            // 3. 加载该 component 的映射配置
+            const savedData = await loadStorage('mapping_' + loadResult.componentId);
+            let mappings = [];
+            let idField = Object.keys(notionData[0] || {})[0];
+
+            console.log('[快速加载] 尝试加载映射，key:', 'mapping_' + loadResult.componentId);
+            console.log('[快速加载] 读取到的映射数据:', savedData);
+
+            if (savedData) {
+              // 处理对象格式 {mappings: [...], idField: '...'}
+              if (savedData.mappings && Array.isArray(savedData.mappings)) {
+                mappings = savedData.mappings;
+                idField = savedData.idField || idField;
+                console.log('[快速加载] 解析映射成功:', mappings);
+                addLog(`載入映射配置: ${mappings.length} 條規則`, 'success');
+              } else if (Array.isArray(savedData)) {
+                // [New] Support old bare-array format
+                mappings = savedData;
+                console.log('[快速加载] 解析舊版陣列映射成功:', mappings);
+                addLog(`載入舊版映射配置: ${mappings.length} 條規則`, 'success');
+              } else {
+                console.warn('[快速加载] 映射數據格式不正確', savedData);
+                addLog('⚠️ 映射配置格式錯誤', 'error');
+              }
+            } else {
+              console.warn('[快速加载] 未找到映射配置，Key:', 'mapping_' + loadResult.componentId);
+              addLog('⚠️ 未找到保存的映射配置 (請先手動設定一次)', 'warning');
+            }
+
+            if (mappings.length === 0) {
+              addLog('提示：请先在 Step 3 设置并确认映射', 'info');
+            }
+
+            // 4. 设置全局变量
+            currentComponentId = loadResult.componentId;
+            currentTemplateId = loadResult.actualTemplateId || loadResult.componentId;
+            currentMappings = mappings;
+            componentLayers = loadResult.layers;
+
+            // 4.1 Update Mapping UI in background (so Step 3 is correct if visited)
+            try {
+              renderMappingUI(componentLayers);
+              const compNameEl = document.getElementById('comp-name');
+              if (compNameEl) compNameEl.textContent = loadResult.componentName;
+              const infoEl = document.getElementById('selected-comp-info');
+              if (infoEl) infoEl.classList.remove('hidden');
+            } catch (e) {
+              console.warn('Background UI update failed:', e);
+            }
+
+            // 5. 更新状态显示
+            quickConfigStatus.classList.remove('hidden');
+            quickConfigComponent.textContent = `Component: ${loadResult.componentName}`;
+            quickConfigMappings.textContent = `映射: ${mappings.length} 条规则${mappings.length === 0 ? ' ⚠️' : ''}`;
+            quickConfigData.textContent = `数据: ${notionData.length} 条记录`;
+
+            // 6. 启用同步选中按钮（如果有映射）
+            if (mappings.length > 0) {
+              btnSyncSelected.disabled = false;
+              setStatus('success', '配置加载成功！');
+              addLog('✅ 配置加载完成，可以使用"同步选中"功能', 'success');
+            } else {
+              btnSyncSelected.disabled = true;
+              setStatus('warning', 'Component 已加载，但未找到映射配置');
+              addLog('提示：请先完成 Step 1-3 创建映射配置', 'info');
+            }
+
+          } catch (e) {
+            console.error('快速加载失败:', e);
+            setStatus('error', '加载配置失败');
+            addLog(`❌ 加载失败: ${e.message}`, 'error');
           }
         };
-        window.addEventListener('message', handler);
-        parent.postMessage({ pluginMessage: { type: 'get-image-urls', notionIds } }, '*');
-        
-        // Timeout fallback
-        setTimeout(() => {
-           window.removeEventListener('message', handler);
-           resolve({});
-        }, 2000);
-      });
+      }
 
-      // Filter data to process based on notionIds
-      const itemsToProcess = notionData.filter((item, i) => {
-        const id = String(item[idFieldSelect.value] || `row-${i}`);
-        return notionIds.includes(id);
-      });
+      // === Tools Section: Instance ID Management ===
 
-      setStatus('loading', '正在下載圖片...');
-      addLog(`开始下载图片 (总计 ${itemsToProcess.length} 条记录)`, 'info');
-      
-      let downloaded = 0;     // 实际下载的图片数
-      let skippedSame = 0;    // 跳过（URL相同）
-      let skippedNoUrl = 0;   // 跳过（无URL或无效URL）
-      let failed = 0;         // 下载失败
+      // Sync Selected Instances
+      if (btnSyncSelected) {
+        btnSyncSelected.onclick = () => {
+          // 清空日志
+          clearLog();
 
-      for (let i = 0; i < itemsToProcess.length; i++) {
-        const item = itemsToProcess[i];
-        const idValue = String(item[idFieldSelect.value] || `row-${i}`); // Need consistent ID generation
-        const currentImages = existingUrls[idValue] || {};
-        console.log(`[图片同步] 处理记录 ${i+1}/${itemsToProcess.length}, ID: ${idValue}`);
-        
-        // 每处理 5 条记录显示一次进度
-        if ((i + 1) % 5 === 0 || i === 0) {
-          addLog(`处理记录 ${i+1}/${itemsToProcess.length}`, 'info');
+          // 验证是否已经完成配置
+          if (!currentComponentId || currentMappings.length === 0) {
+            setStatus('error', '请先加载配置（点击"使用上次配置"）或完成完整同步流程');
+            addLog('❌ 未找到配置信息', 'error');
+            addLog('提示：点击"⚡ 使用上次配置"或返回完成 Step 1-3', 'warning');
+            return;
+          }
+
+          if (!notionData || notionData.length === 0) {
+            setStatus('error', '请先拉取 Notion 数据');
+            addLog('❌ 未找到 Notion 数据', 'error');
+            return;
+          }
+
+          // 发送同步选中的请求
+          parent.postMessage({
+            pluginMessage: {
+              type: 'sync-selected',
+              componentId: currentComponentId,
+              templateId: currentTemplateId,
+              mappings: currentMappings,
+              idField: idFieldSelect.value,
+              notionData: notionData
+            }
+          }, '*');
+          setStatus('loading', '正在同步选中的 Instance...');
+          btnSyncSelected.disabled = true;
+        };
+      }
+
+      // Read Instance ID
+      btnReadInstanceId.onclick = () => {
+        parent.postMessage({ pluginMessage: { type: 'read-instance-id' } }, '*');
+        setStatus('loading', '正在读取 Instance ID...');
+      };
+
+      // Update Instance ID
+      btnUpdateInstanceId.onclick = () => {
+        const newId = newIdInput.value.trim();
+        if (!newId) {
+          setStatus('error', '请输入新的 ID');
+          return;
         }
 
-        for (const m of mappings) {
-          const newUrl = item[m.dataField];
-          console.log(`[图片同步]   图层: ${m.layerName}, 新URL: ${newUrl}`);
-          
-          // 检查是否有有效的图片 URL
-          if (typeof newUrl === 'string' && newUrl.startsWith('http')) {
-             // 3. Compare with existing URL (Ignore Query Params)
-             // 强制更新模式：跳过URL比较，直接下载
-             if (forceUpdate) {
-               console.log(`[图片同步]   → 强制更新模式，直接下载`);
-             } else {
-               // Notion URLs change query params (signatures) but base path is stable.
-               const oldUrl = currentImages[m.layerName]; // Get existing URL for this layer
-               const cleanOld = oldUrl ? oldUrl.split('?')[0] : '';
-               const cleanNew = newUrl.split('?')[0];
+        parent.postMessage({
+          pluginMessage: {
+            type: 'update-instance-id',
+            newId: newId
+          }
+        }, '*');
+        setStatus('loading', '正在更新 ID...');
+      };
 
-               // DEBUG LOG - 显示完整的清理后URL以便调试
-               if (oldUrl) {
+      // Enable update button when new ID is entered
+      newIdInput.oninput = () => {
+        btnUpdateInstanceId.disabled = !newIdInput.value.trim();
+      };
+
+
+      function extractArray(obj) {
+        if (typeof obj !== 'object' || obj === null) return null;
+
+        // 1. Try common keys
+        const keys = ['data', 'results', 'items', 'records', 'rows', 'list', 'entries', 'json', 'body'];
+        for (const k of keys) {
+          const val = obj[k];
+          if (Array.isArray(val)) return val;
+          // Handle stringified JSON (common in some webhooks)
+          if (typeof val === 'string') {
+            try {
+              const parsed = JSON.parse(val);
+              if (Array.isArray(parsed)) return parsed;
+            } catch { }
+          }
+        }
+
+        // 2. Iterate all keys if strict common keys didn't work
+        for (const k of Object.keys(obj)) {
+          const val = obj[k];
+          if (Array.isArray(val)) return val;
+          if (typeof val === 'string') {
+            try {
+              const parsed = JSON.parse(val);
+              if (Array.isArray(parsed)) return parsed;
+            } catch { }
+          }
+        }
+
+        return null;
+      }
+
+
+      // Step 4: Sync
+
+      // 带重试機制同埋 Timeout 的圖片下載
+      async function fetchWithRetry(url, retries = 3, timeoutMs = 30000) {
+        let lastError;
+        for (let i = 0; i < retries; i++) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+          try {
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response;
+          } catch (e) {
+            clearTimeout(timeoutId);
+            lastError = e;
+            const isTimeout = e.name === 'AbortError';
+            console.warn(`[圖片下載] 第 ${i + 1} 次嘗試失敗${isTimeout ? ' (Timeout)' : ''}:`, e.message);
+
+            if (i < retries - 1) {
+              await new Promise(resolve => setTimeout(resolve, (i + 1) * 1000));
+            }
+          }
+        }
+        throw lastError;
+      }
+
+      /**
+       * 压缩图片以符合 Figma 的大小限制
+       * Figma 限制: 最大 4096x4096 像素，建议文件大小不超过 4MB
+       * Figma 不支持 WEBP，会自动转换为 PNG
+       */
+      async function compressImage(arrayBuffer) {
+        const MAX_DIMENSION = 2048; // A5 300dpi is around 1748x2480, 2048 is a safe sweet spot
+        const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB more aggressive
+        const QUALITY = 0.75; // JPEG quality
+
+        // 检测原始图片格式
+        const bytes = new Uint8Array(arrayBuffer);
+        let originalFormat = 'jpeg';
+        let outputFormat = 'image/jpeg';
+
+        // 检测图片格式通过文件头（magic bytes）
+        if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+          originalFormat = 'png';
+          outputFormat = 'image/png';
+        } else if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+          originalFormat = 'jpeg';
+          outputFormat = 'image/jpeg';
+        } else if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46) {
+          originalFormat = 'webp';
+          outputFormat = 'image/png'; // Convert WEBP to PNG
+          console.log(`[圖片壓縮] 檢測到 WEBP 格式，將轉換為 PNG`);
+        }
+
+        const needsConversion = originalFormat === 'webp';
+        const needsCompression = arrayBuffer.byteLength > MAX_FILE_SIZE;
+
+        // Forced processing for large files or mandatory conversions
+        const shouldProcess = needsConversion || needsCompression || arrayBuffer.byteLength > 500 * 1024;
+
+        if (!shouldProcess) {
+          console.log(`[圖片壓縮] 原始大小: ${(arrayBuffer.byteLength / 1024).toFixed(1)}KB，細圖跳過處理`);
+          return new Uint8Array(arrayBuffer);
+        }
+
+        console.log(`[圖片壓縮] 開始處理... 原始大小: ${(arrayBuffer.byteLength / 1024).toFixed(1)}KB`);
+
+        return new Promise((resolve, reject) => {
+          // 加入 60 秒安全鎖，防止 img.onload 永遠唔觸發
+          const safetyTimeout = setTimeout(() => {
+            reject(new Error('圖片處理逾時 (Safety Timeout)'));
+          }, 60000);
+
+          // 使用原始格式创建 blob 以便正确加载图片
+          const originalMimeType = originalFormat === 'png' ? 'image/png' :
+            originalFormat === 'jpeg' ? 'image/jpeg' :
+              'image/webp';
+          const blob = new Blob([arrayBuffer], { type: originalMimeType });
+          const img = new Image();
+          const url = URL.createObjectURL(blob);
+
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+
+            let width = img.width;
+            let height = img.height;
+
+            // 计算缩放比例
+            let scale = 1;
+            if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+              scale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
+              width = Math.floor(width * scale);
+              height = Math.floor(height * scale);
+              console.log(`[圖片壓縮] 原始尺寸: ${img.width}x${img.height}, 縮放至: ${width}x${height}`);
+            }
+
+            // 创建 Canvas 进行处理
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Start processing
+            const tryCompress = () => {
+              // Set JPEG quality
+              const finalQuality = outputFormat === 'image/jpeg' ? QUALITY : 1.0;
+
+              canvas.toBlob(async (blob) => {
+                if (!blob) {
+                  reject(new Error('處理失敗'));
+                  return;
+                }
+
+                const finalBuffer = await blob.arrayBuffer();
+                console.log(`[圖片壓縮] 處理完成: ${(finalBuffer.byteLength / 1024).toFixed(1)}KB (格式: ${outputFormat}, 壓縮率: ${(100 - (finalBuffer.byteLength / arrayBuffer.byteLength) * 100).toFixed(1)}%)`);
+                clearTimeout(safetyTimeout);
+                resolve(new Uint8Array(finalBuffer));
+              }, outputFormat, finalQuality);
+            };
+            tryCompress();
+          };
+
+          img.onerror = () => {
+            clearTimeout(safetyTimeout);
+            URL.revokeObjectURL(url);
+            reject(new Error('圖片加載失敗'));
+          };
+
+          img.src = url;
+        });
+      }
+
+      async function downloadAndSendImages(mappings, selectedNotionIds = null, forceUpdate = false) {
+        console.log('[图片同步] 开始处理图片，mappings:', mappings);
+        console.log('[图片同步] 选中的Notion IDs:', selectedNotionIds);
+        console.log('[图片同步] 强制更新模式:', forceUpdate);
+        addLog('🖼️ 开始图片同步', 'info');
+
+        // 1. Get List of Notion IDs to process
+        let notionIds;
+        if (selectedNotionIds && selectedNotionIds.length > 0) {
+          // 只处理选中的instance
+          notionIds = selectedNotionIds;
+          addLog(`只处理选中的 ${notionIds.length} 个 instance 的图片`, 'info');
+          if (forceUpdate) {
+            addLog('⚡ 强制更新模式：跳过URL比较，直接下载所有图片', 'info');
+          }
+        } else {
+          // 处理所有数据
+          notionIds = notionData.map((item, i) => String(item[idFieldSelect.value] || `row-${i}`));
+        }
+        console.log('[图片同步] 处理的 Notion IDs:', notionIds);
+
+        setStatus('loading', '正在檢查現有圖片...');
+        addLog('正在检查现有图片...', 'info');
+
+        // 2. Ask Backend for existing URLs
+        // Wrap in Promise to wait for response
+        const existingUrls = await new Promise((resolve) => {
+          const handler = (e) => {
+            const msg = e.data.pluginMessage;
+            if (msg && msg.type === 'image-urls') {
+              window.removeEventListener('message', handler);
+              resolve(msg.urls || {});
+            }
+          };
+          window.addEventListener('message', handler);
+          parent.postMessage({ pluginMessage: { type: 'get-image-urls', notionIds } }, '*');
+
+          // Timeout fallback
+          setTimeout(() => {
+            window.removeEventListener('message', handler);
+            resolve({});
+          }, 2000);
+        });
+
+        // Filter data to process based on notionIds
+        const itemsToProcess = notionData.filter((item, i) => {
+          const id = String(item[idFieldSelect.value] || `row-${i}`);
+          return notionIds.includes(id);
+        });
+
+        setStatus('loading', '正在下載圖片...');
+        addLog(`开始下载图片 (总计 ${itemsToProcess.length} 条记录)`, 'info');
+
+        let downloaded = 0;     // 实际下载的图片数
+        let skippedSame = 0;    // 跳过（URL相同）
+        let skippedNoUrl = 0;   // 跳过（无URL或无效URL）
+        let failed = 0;         // 下载失败
+
+        // [New] Session cache to avoid downloading the same URL multiple times in one go
+        const sessionImageCache = new Map(); // URL (clean) -> Uint8Array
+
+        // [New] Progress Tracking: Filter mappings to only images to avoid confusion
+        const imageMappings = (mappings || []).filter(m => m.dataType === 'image');
+        const totalImagesPossible = itemsToProcess.length * imageMappings.length;
+
+        if (totalImagesPossible === 0) {
+          console.log('[圖片同步] 未發現圖片映射規則，結束圖片同步。');
+          addLog('ℹ️ 未發現需要同步的圖片映射', 'info');
+          return;
+        }
+
+        let currentImageGlobalIndex = 0;
+
+        for (let i = 0; i < itemsToProcess.length; i++) {
+          const item = itemsToProcess[i];
+          const idValue = String(item[idFieldSelect.value] || `row-${i}`);
+          const currentImages = existingUrls[idValue] || {};
+
+          console.log(`[圖片同步] 正處理記錄 ${i + 1}/${itemsToProcess.length}, ID: ${idValue}`);
+
+          for (const m of imageMappings) {
+            currentImageGlobalIndex++;
+            const progressPct = Math.round((currentImageGlobalIndex / totalImagesPossible) * 100);
+            const progressPrefix = `[圖片同步] [${progressPct}%] (${currentImageGlobalIndex}/${totalImagesPossible})`;
+
+            const newUrl = item[m.dataField];
+            console.log(`${progressPrefix} 圖層: ${m.layerName}, URL: ${newUrl}`);
+
+            // 检查是否有有效的图片 URL
+            if (typeof newUrl === 'string' && newUrl.startsWith('http')) {
+              // 3. Compare with existing URL (Ignore Query Params)
+              // 强制更新模式：跳过URL比较，直接下载
+              if (forceUpdate) {
+                console.log(`${progressPrefix}   → 强制更新模式，直接下载`);
+              } else {
+                // Notion URLs change query params (signatures) but base path is stable.
+                const oldUrl = currentImages[m.layerName]; // Get existing URL for this layer
+                const cleanOld = oldUrl ? oldUrl.split('?')[0] : '';
+                const cleanNew = newUrl.split('?')[0];
+
+                // DEBUG LOG - 显示完整的清理后URL以便调试
+                if (oldUrl) {
                   console.log(`[ImgDebug] ID:${idValue} Layer:${m.layerName}`);
                   console.log(`   Old(Clean): ${cleanOld}`);
                   console.log(`   New(Clean): ${cleanNew}`);
                   console.log(`   Match: ${cleanOld === cleanNew}`);
-               }
+                }
 
-               if (cleanOld === cleanNew) {
-                 console.log(`[图片同步]   → 跳过（URL相同）`);
-                 skippedSame++;
-                 continue; // SKIP DOWNLOAD
-               }
-             }
-          
+                if (cleanOld === cleanNew) {
+                  console.log(`${progressPrefix}   → 跳过（URL相同）`);
+                  skippedSame++;
+                  continue; // SKIP DOWNLOAD
+                }
+              }
+
+              try {
+                const startTime = Date.now();
+                const cleanUrl = newUrl.split('?')[0];
+                let compressedBytes;
+
+                if (sessionImageCache.has(cleanUrl)) {
+                  console.log(`${progressPrefix} → 命中 Session 緩存，跳過下載: ${m.layerName}`);
+                  compressedBytes = sessionImageCache.get(cleanUrl);
+                } else {
+                  console.log(`${progressPrefix} → 開始下載 (New/Changed): ${m.layerName}`);
+                  const resp = await fetchWithRetry(newUrl, 3);
+                  const dlTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+                  const buffer = await resp.arrayBuffer();
+                  const compressStart = Date.now();
+                  compressedBytes = await compressImage(buffer);
+
+                  const compressTime = ((Date.now() - compressStart) / 1000).toFixed(1);
+                  console.log(`${progressPrefix} → 下載耗時: ${dlTime}s, 壓縮耗時: ${compressTime}s`);
+
+                  sessionImageCache.set(cleanUrl, compressedBytes);
+                  downloaded++;
+                }
+
+                parent.postMessage({
+                  pluginMessage: {
+                    type: 'set-image',
+                    notionId: idValue,
+                    layerName: m.layerName,
+                    imageBytes: compressedBytes,
+                    imageUrl: newUrl // Send URL to save
+                  }
+                }, '*');
+                console.log(`${progressPrefix} → 已同步到 Figma: ${m.layerName}`);
+
+                // 每下载 3 张图片显示一次进度
+                if (downloaded % 3 === 0) {
+                  addLog(`✅ 已下載 ${downloaded} 張圖片`, 'success');
+                }
+              } catch (e) {
+                const errorMsg = e.name === 'AbortError' ? '網路下載逾時' : (e instanceof Error ? e.message : String(e));
+                console.error(`${progressPrefix} → 處理失敗: ${errorMsg}`);
+                addLog(`⚠️ 跳過失敗圖片: ${m.layerName} (${errorMsg})`, 'warning');
+                failed++;
+              }
+            } else {
+              // 无URL或无效URL
+              console.log(`[图片同步]   → 跳过（无有效URL）`);
+              skippedNoUrl++;
+            }
+
+            const processed = downloaded + skippedSame + skippedNoUrl + failed;
+            if (processed % 5 === 0) {
+              setStatus('loading', `處理圖片 ${processed}/${notionData.length * mappings.length} (已下載 ${downloaded}, 跳過 ${skippedSame + skippedNoUrl})...`);
+            }
+          }
+        }
+
+        const total = downloaded + skippedSame + skippedNoUrl + failed;
+        const successMsg = `同步完成！已下載 ${downloaded} 張新圖片，跳過 ${skippedSame} 張相同圖片，${skippedNoUrl} 個無圖片欄位` + (failed > 0 ? `，${failed} 張下載失敗` : '');
+        setStatus('success', successMsg);
+        addLog(successMsg, 'success');
+        addLog(`📊 统计: 下载 ${downloaded}, 跳过 ${skippedSame + skippedNoUrl}, 失败 ${failed}`, 'info');
+        btnSync.disabled = false;
+      }
+
+      // --- Helpers ---
+
+      function renderPreview(index = 0) {
+        if (!notionData || notionData.length === 0) return;
+
+        // Boundary checks
+        if (index < 0) index = 0;
+        if (index >= notionData.length) index = notionData.length - 1;
+
+        currentPreviewIndex = index;
+        const record = notionData[index];
+
+        // Update Counter
+        const counterEl = document.getElementById('preview-counter');
+        if (counterEl) {
+          counterEl.textContent = `${index + 1} / ${notionData.length}`;
+        }
+
+        // Update Buttons
+        const btnPrev = document.getElementById('btn-prev-record');
+        const btnNext = document.getElementById('btn-next-record');
+
+        if (btnPrev) btnPrev.disabled = (index === 0);
+        if (btnNext) btnNext.disabled = (index === notionData.length - 1);
+
+        previewList.innerHTML = '';
+        schemaKeys.forEach(key => {
+          const div = document.createElement('div');
+          div.className = 'preview-item'; // Changed from mapping-item
+          div.style.display = 'flex';
+          div.style.justifyContent = 'space-between';
+
+          const keySpan = document.createElement('span');
+          keySpan.style.fontWeight = 'bold';
+          keySpan.style.color = '#ddd';
+          keySpan.textContent = key;
+
+          const valSpan = document.createElement('span');
+          valSpan.style.color = '#aaa';
+          valSpan.style.fontSize = '10px';
+          valSpan.style.maxWidth = '150px';
+          valSpan.style.overflow = 'hidden';
+          valSpan.style.textOverflow = 'ellipsis';
+          valSpan.style.whiteSpace = 'nowrap';
+          let val = record[key];
+          if (typeof val === 'object') val = JSON.stringify(val);
+          valSpan.textContent = String(val);
+
+          div.appendChild(keySpan);
+          div.appendChild(valSpan);
+          previewList.appendChild(div);
+        });
+      }
+
+      // Navigation Event Listeners
+      const btnPrevRecord = document.getElementById('btn-prev-record');
+      const btnNextRecord = document.getElementById('btn-next-record');
+
+      if (btnPrevRecord) {
+        btnPrevRecord.onclick = () => {
+          if (currentPreviewIndex > 0) {
+            renderPreview(currentPreviewIndex - 1);
+          }
+        };
+      }
+
+      if (btnNextRecord) {
+        btnNextRecord.onclick = () => {
+          if (currentPreviewIndex < notionData.length - 1) {
+            renderPreview(currentPreviewIndex + 1);
+          }
+        };
+      }
+
+
+      // --- Message Handler ---
+      window.onmessage = (event) => {
+        try {
+          const msg = event.data.pluginMessage;
+          console.log('Frontend received message:', msg);
+          if (!msg) return;
+
+          if (msg.type === 'version-info') {
+            const vDisplay = document.getElementById('version-display');
+            if (vDisplay) vDisplay.textContent = 'v' + msg.version;
+          }
+
+          else if (msg.type === 'component-data') {
+            // 如果是快速加载 (fromSelection)，由局部处理函数处理，忽略此处以防跳转 UI
+            if (msg.fromSelection) return;
+
+            currentComponentId = msg.componentId;
+            currentTemplateId = msg.actualTemplateId || msg.componentId;
+            componentLayers = msg.layers;
+
+            // 保存选中的 Component ID，下次自动恢复
+            saveStorage('last_component_id', currentComponentId);
+            console.log('[存储] 已保存 Component ID:', currentComponentId);
+
+            // Try to load saved mappings for this component
+            setStatus('loading', '正在讀取儲存的映射設定...');
+            loadStorage('mapping_' + currentComponentId);
+
             try {
-              console.log(`[图片同步]   → 开始下载: ${newUrl}`);
-              const resp = await fetchWithRetry(newUrl, 3); // 使用重试机制，最多3次
-              const buffer = await resp.arrayBuffer();
-              
-              // 压缩图片以符合 Figma 限制
-              const compressedBytes = await compressImage(buffer);
-              
+              renderMappingUI(componentLayers);
+            } catch (e) {
+              console.error('Render UI Error:', e);
+              setStatus('error', '渲染介面失敗: ' + e.message);
+            }
+
+            document.getElementById('comp-name').textContent = msg.componentName;
+            document.getElementById('selected-comp-info').classList.remove('hidden');
+
+            if (componentLayers.length === 0) {
+              setStatus('error', '未找到名稱含 # 的圖層 (請檢查圖層名稱)');
+              btnSync.disabled = true;
+            } else {
+              setStatus('success', '已讀取 Component，請設定映射');
+              console.log('Enabling Sync button manually from code');
+              btnSync.removeAttribute('disabled'); // Ensure attribute is gone
+              btnSync.disabled = false;
+
+              // Try to load saved mappings for this component
+              setStatus('loading', '正在讀取儲存的映射設定...');
+              loadStorage('mapping_' + currentComponentId);
+            }
+            showStep(3);
+          }
+          else if (msg.type === 'component-layers') {
+            // 处理「读取选中的 Component」返回的数据
+            console.log('Processing component-layers...');
+            componentLayers = msg.layers;
+            currentComponentId = msg.componentId;
+            currentTemplateId = msg.actualTemplateId || msg.componentId;
+
+            // 保存选中的 Component ID
+            saveStorage('last_component_id', currentComponentId);
+            console.log('[存储] 已保存 Component ID:', currentComponentId);
+
+            try {
+              renderMappingUI(componentLayers);
+            } catch (e) {
+              console.error('Render UI Error:', e);
+              setStatus('error', '渲染介面失敗: ' + e.message);
+            }
+
+            document.getElementById('comp-name').textContent = msg.componentName;
+            document.getElementById('selected-comp-info').classList.remove('hidden');
+
+            if (componentLayers.length === 0) {
+              setStatus('error', '未找到名稱含 # 的圖層 (請檢查圖層名稱)');
+              btnSync.disabled = true;
+            } else {
+              setStatus('success', '已讀取 Component，請設定映射');
+              btnSync.disabled = false;
+
+              // Try to load saved mappings for this component
+              setStatus('loading', '正在讀取儲存的映射設定...');
+              loadStorage('mapping_' + currentComponentId);
+            }
+            showStep(3);
+          }
+          else if (msg.type === 'status') {
+            setStatus('loading', msg.message);
+          }
+          else if (msg.type === 'error') {
+            setStatus('error', msg.message);
+            btnSync.disabled = false;
+          }
+          else if (msg.type === 'done') {
+            // Check if we need to sync images
+            const imageMappings = currentMappings.filter(m => m.dataType !== 'text');
+
+            if (imageMappings.length > 0) {
+              setStatus('success', msg.message + ' (開始處理圖片...)');
+              addLog(`✅ ${msg.message}`, 'success');
+              addLog(`检测到 ${imageMappings.length} 个图片映射，开始图片同步`, 'info');
+              downloadAndSendImages(imageMappings);
+            } else {
+              setStatus('success', msg.message);
+              addLog(`✅ ${msg.message}`, 'success');
+              addLog('未检测到图片映射，同步完成', 'info');
+              btnSync.disabled = false;
+            }
+            showSyncAgain(); // Show "Sync Again" button
+          }
+          else if (msg.type === 'instance-id-info') {
+            // Display current instance ID
+            currentIdValue.textContent = msg.currentId;
+            currentNodeName.textContent = `节点: ${msg.nodeName}`;
+            currentIdDisplay.classList.remove('hidden');
+            newIdInput.value = ''; // Clear input
+            btnUpdateInstanceId.disabled = true;
+            setStatus('success', '已读取 Instance ID');
+          }
+          else if (msg.type === 'id-updated') {
+            // ID updated successfully
+            setStatus('success', msg.message);
+            // Clear form
+            currentIdDisplay.classList.add('hidden');
+            newIdInput.value = '';
+            btnUpdateInstanceId.disabled = true;
+          }
+          else if (msg.type === 'sync-selected-done') {
+            // 同步选中完成
+            console.log('[sync-selected-done] 收到消息:', msg);
+            console.log('[sync-selected-done] updatedNotionIds:', msg.updatedNotionIds);
+            addLog(`✅ ${msg.message}`, 'success');
+
+            // 检查是否需要同步图片
+            const imageMappings = currentMappings.filter(m => m.dataType !== 'text');
+            console.log('[sync-selected-done] imageMappings 数量:', imageMappings.length);
+
+            if (imageMappings.length > 0 && msg.updatedNotionIds && msg.updatedNotionIds.length > 0) {
+              setStatus('success', msg.message + ' (開始處理圖片...)');
+              addLog(`检测到 ${imageMappings.length} 个图片映射，开始图片同步`, 'info');
+              console.log('[sync-selected-done] 调用 downloadAndSendImages，IDs:', msg.updatedNotionIds);
+              // 只处理更新的instance的图片，使用强制更新模式
+              downloadAndSendImages(imageMappings, msg.updatedNotionIds, true);
+            } else {
+              setStatus('success', msg.message);
+              addLog('未检测到图片映射或无更新的instance，同步完成', 'info');
+              if (btnSyncSelected) btnSyncSelected.disabled = false;
+            }
+          }
+          else if (msg.type === 'storage-data') {
+            if (msg.key === 'webhook_url' && msg.value) {
+              webhookInput.value = msg.value;
+              // Auto-fetch if URL exists
+              if (msg.value && msg.value.startsWith('http')) {
+                console.log('[自动获取] URL 已存在，自动拉取数据...');
+                btnFetch.click();
+              }
+            }
+            if (msg.key === 'last_component_id' && msg.value) {
+              console.log('[自动恢复] 上次选择的 Component ID:', msg.value);
+              // 发送消息到后端，请求验证并加载这个 Component
               parent.postMessage({
                 pluginMessage: {
-                  type: 'set-image',
-                  notionId: idValue,
-                  layerName: m.layerName,
-                  imageBytes: compressedBytes,
-                  imageUrl: newUrl // Send URL to save
+                  type: 'restore-component',
+                  componentId: msg.value
                 }
               }, '*');
-              console.log(`[图片同步]   → 已下载并压缩`);
-              downloaded++;
-              
-              // 每下载 3 张图片显示一次进度
-              if (downloaded % 3 === 0) {
-                addLog(`✅ 已下载 ${downloaded} 张图片`, 'success');
-              }
-            } catch (e) {
-              const errorMsg = e instanceof Error ? e.message : String(e);
-              console.error(`[图片同步]   → 下载失败: ${errorMsg}`);
-              console.error(`[图片同步]   → 失败的 URL: ${newUrl}`);
-              addLog(`❌ 下载失败: ${m.layerName}`, 'error');
-              failed++;
             }
-          } else {
-            // 无URL或无效URL
-            console.log(`[图片同步]   → 跳过（无有效URL）`);
-            skippedNoUrl++;
+
+            if (msg.key === 'cached_data' && msg.value) {
+              try {
+                const parsed = JSON.parse(msg.value);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  notionData = parsed;
+                  const allKeys = new Set();
+                  parsed.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
+                  schemaKeys = Array.from(allKeys);
+                  renderPreview(0);
+                  showStep('preview');
+                  setStatus('success', `已載入緩存數據 (${parsed.length} 筆)`);
+                }
+              } catch (e) {
+                console.warn('Failed to parse cached data from storage', e);
+              }
+            }
+
+            if (msg.key === `mapping_${currentComponentId}` && msg.value) {
+              console.log('Loaded saved mappings:', msg.value);
+              renderMappingUI(componentLayers, msg.value);
+              setStatus('success', '已自動套用上次的映射設定');
+            }
           }
-          
-          const processed = downloaded + skippedSame + skippedNoUrl + failed;
-          if (processed % 5 === 0) {
-            setStatus('loading', `處理圖片 ${processed}/${notionData.length * mappings.length} (已下載 ${downloaded}, 跳過 ${skippedSame + skippedNoUrl})...`);
-          }
-        }
-      }
-      
-      const total = downloaded + skippedSame + skippedNoUrl + failed;
-      const successMsg = `同步完成！已下載 ${downloaded} 張新圖片，跳過 ${skippedSame} 張相同圖片，${skippedNoUrl} 個無圖片欄位` + (failed > 0 ? `，${failed} 張下載失敗` : '');
-      setStatus('success', successMsg);
-      addLog(successMsg, 'success');
-      addLog(`📊 统计: 下载 ${downloaded}, 跳过 ${skippedSame + skippedNoUrl}, 失败 ${failed}`, 'info');
-      btnSync.disabled = false;
-    }
-
-    // --- Helpers ---
-    
-    function renderPreview(index = 0) {
-      if (!notionData || notionData.length === 0) return;
-      
-      // Boundary checks
-      if (index < 0) index = 0;
-      if (index >= notionData.length) index = notionData.length - 1;
-      
-      currentPreviewIndex = index;
-      const record = notionData[index];
-      
-      // Update Counter
-      const counterEl = document.getElementById('preview-counter');
-      if (counterEl) {
-        counterEl.textContent = `${index + 1} / ${notionData.length}`;
-      }
-      
-      // Update Buttons
-      const btnPrev = document.getElementById('btn-prev-record');
-      const btnNext = document.getElementById('btn-next-record');
-      
-      if (btnPrev) btnPrev.disabled = (index === 0);
-      if (btnNext) btnNext.disabled = (index === notionData.length - 1);
-      
-      previewList.innerHTML = '';
-      schemaKeys.forEach(key => {
-        const div = document.createElement('div');
-        div.className = 'preview-item'; // Changed from mapping-item
-        div.style.display = 'flex';
-        div.style.justifyContent = 'space-between';
-        
-        const keySpan = document.createElement('span');
-        keySpan.style.fontWeight = 'bold';
-        keySpan.style.color = '#ddd';
-        keySpan.textContent = key;
-        
-        const valSpan = document.createElement('span');
-        valSpan.style.color = '#aaa';
-        valSpan.style.fontSize = '10px';
-        valSpan.style.maxWidth = '150px';
-        valSpan.style.overflow = 'hidden';
-        valSpan.style.textOverflow = 'ellipsis';
-        valSpan.style.whiteSpace = 'nowrap';
-        let val = record[key];
-        if (typeof val === 'object') val = JSON.stringify(val);
-        valSpan.textContent = String(val);
-
-        div.appendChild(keySpan);
-        div.appendChild(valSpan);
-        previewList.appendChild(div);
-      });
-    }
-
-    // Navigation Event Listeners
-    const btnPrevRecord = document.getElementById('btn-prev-record');
-    const btnNextRecord = document.getElementById('btn-next-record');
-
-    if (btnPrevRecord) {
-      btnPrevRecord.onclick = () => {
-        if (currentPreviewIndex > 0) {
-          renderPreview(currentPreviewIndex - 1);
+        } catch (err) {
+          console.error('Window onmessage error:', err);
+          setStatus('error', 'Plugin 錯誤: ' + err.message);
         }
       };
-    }
 
-    if (btnNextRecord) {
-      btnNextRecord.onclick = () => {
-        if (currentPreviewIndex < notionData.length - 1) {
-          renderPreview(currentPreviewIndex + 1);
-        }
-      };
-    }
+      // Refactored renderMappingUI for safety
+      function renderMappingUI(layers, savedMappings = null) {
+        mappingList.innerHTML = '';
 
+        // Populate ID Select
+        idFieldSelect.innerHTML = '';
+        schemaKeys.forEach(key => {
+          const opt = document.createElement('option');
+          opt.value = key;
+          opt.textContent = key;
+          if (key.toLowerCase() === 'id') opt.selected = true;
+          // Restore ID selection if saved
+          if (savedMappings && savedMappings.idField && key === savedMappings.idField) {
+            opt.selected = true;
+          }
+          idFieldSelect.appendChild(opt);
+        });
 
-    // --- Message Handler ---
-    window.onmessage = (event) => {
-      try {
-        const msg = event.data.pluginMessage;
-        console.log('Frontend received message:', msg);
-        if (!msg) return;
+        // Populate Layer Mappings
+        layers.forEach(layer => {
+          const div = document.createElement('div');
+          div.className = 'mapping-item';
+          div.dataset.layer = layer.name;
+          div.dataset.type = layer.type;
 
-        if (msg.type === 'version-info') {
-           const vDisplay = document.getElementById('version-display');
-           if(vDisplay) vDisplay.textContent = 'v' + msg.version;
-        }
+          let icon = layer.type === 'TEXT' ? 'T' : '🖼️';
 
-        else if (msg.type === 'component-data') {
-          // 如果是快速加载 (fromSelection)，由局部处理函数处理，忽略此处以防跳转 UI
-          if (msg.fromSelection) return;
-
-          currentComponentId = msg.componentId;
-          componentLayers = msg.layers;
-          
-          // 保存选中的 Component ID，下次自动恢复
-          saveStorage('last_component_id', currentComponentId);
-          console.log('[存储] 已保存 Component ID:', currentComponentId);
-          
-          // Try to load saved mappings for this component
-          setStatus('loading', '正在讀取儲存的映射設定...');
-          loadStorage('mapping_' + currentComponentId);
-          
-          try {
-            renderMappingUI(componentLayers);
-          } catch (e) {
-            console.error('Render UI Error:', e);
-            setStatus('error', '渲染介面失敗: ' + e.message);
-          }
-          
-          document.getElementById('comp-name').textContent = msg.componentName;
-          document.getElementById('selected-comp-info').classList.remove('hidden');
-          
-          if (componentLayers.length === 0) {
-            setStatus('error', '未找到名稱含 # 的圖層 (請檢查圖層名稱)');
-            btnSync.disabled = true;
-          } else {
-            setStatus('success', '已讀取 Component，請設定映射');
-            console.log('Enabling Sync button manually from code');
-            btnSync.removeAttribute('disabled'); // Ensure attribute is gone
-            btnSync.disabled = false;
-            
-            // Try to load saved mappings for this component
-            setStatus('loading', '正在讀取儲存的映射設定...');
-            loadStorage('mapping_' + currentComponentId);
-          }
-          showStep(3);
-        }
-        else if (msg.type === 'component-layers') {
-          // 处理「读取选中的 Component」返回的数据
-          console.log('Processing component-layers...');
-          componentLayers = msg.layers;
-          currentComponentId = msg.componentId;
-          
-          // 保存选中的 Component ID
-          saveStorage('last_component_id', currentComponentId);
-          console.log('[存储] 已保存 Component ID:', currentComponentId);
-          
-          try {
-            renderMappingUI(componentLayers);
-          } catch (e) {
-            console.error('Render UI Error:', e);
-            setStatus('error', '渲染介面失敗: ' + e.message);
-          }
-          
-          document.getElementById('comp-name').textContent = msg.componentName;
-          document.getElementById('selected-comp-info').classList.remove('hidden');
-          
-          if (componentLayers.length === 0) {
-            setStatus('error', '未找到名稱含 # 的圖層 (請檢查圖層名稱)');
-            btnSync.disabled = true;
-          } else {
-            setStatus('success', '已讀取 Component，請設定映射');
-            btnSync.disabled = false;
-            
-            // Try to load saved mappings for this component
-            setStatus('loading', '正在讀取儲存的映射設定...');
-            loadStorage('mapping_' + currentComponentId);
-          }
-          showStep(3);
-        }
-        else if (msg.type === 'status') {
-          setStatus('loading', msg.message);
-        }
-        else if (msg.type === 'error') {
-          setStatus('error', msg.message);
-          btnSync.disabled = false;
-        }
-        else if (msg.type === 'done') {
-          // Check if we need to sync images
-          const imageMappings = currentMappings.filter(m => m.dataType !== 'text');
-          
-          if (imageMappings.length > 0) {
-            setStatus('success', msg.message + ' (開始處理圖片...)');
-            addLog(`✅ ${msg.message}`, 'success');
-            addLog(`检测到 ${imageMappings.length} 个图片映射，开始图片同步`, 'info');
-            downloadAndSendImages(imageMappings);
-          } else {
-            setStatus('success', msg.message);
-            addLog(`✅ ${msg.message}`, 'success');
-            addLog('未检测到图片映射，同步完成', 'info');
-            btnSync.disabled = false;
-          }
-          showSyncAgain(); // Show "Sync Again" button
-        }
-        else if (msg.type === 'instance-id-info') {
-          // Display current instance ID
-          currentIdValue.textContent = msg.currentId;
-          currentNodeName.textContent = `节点: ${msg.nodeName}`;
-          currentIdDisplay.classList.remove('hidden');
-          newIdInput.value = ''; // Clear input
-          btnUpdateInstanceId.disabled = true;
-          setStatus('success', '已读取 Instance ID');
-        }
-        else if (msg.type === 'id-updated') {
-          // ID updated successfully
-          setStatus('success', msg.message);
-          // Clear form
-          currentIdDisplay.classList.add('hidden');
-          newIdInput.value = '';
-          btnUpdateInstanceId.disabled = true;
-        }
-        else if (msg.type === 'sync-selected-done') {
-          // 同步选中完成
-          console.log('[sync-selected-done] 收到消息:', msg);
-          console.log('[sync-selected-done] updatedNotionIds:', msg.updatedNotionIds);
-          addLog(`✅ ${msg.message}`, 'success');
-          
-          // 检查是否需要同步图片
-          const imageMappings = currentMappings.filter(m => m.dataType !== 'text');
-          console.log('[sync-selected-done] imageMappings 数量:', imageMappings.length);
-          
-          if (imageMappings.length > 0 && msg.updatedNotionIds && msg.updatedNotionIds.length > 0) {
-            setStatus('success', msg.message + ' (開始處理圖片...)');
-            addLog(`检测到 ${imageMappings.length} 个图片映射，开始图片同步`, 'info');
-            console.log('[sync-selected-done] 调用 downloadAndSendImages，IDs:', msg.updatedNotionIds);
-            // 只处理更新的instance的图片，使用强制更新模式
-            downloadAndSendImages(imageMappings, msg.updatedNotionIds, true);
-          } else {
-            setStatus('success', msg.message);
-            addLog('未检测到图片映射或无更新的instance，同步完成', 'info');
-            if (btnSyncSelected) btnSyncSelected.disabled = false;
-          }
-        }
-        else if (msg.type === 'storage-data') {
-          if (msg.key === 'webhook_url' && msg.value) {
-            webhookInput.value = msg.value;
-            // Auto-fetch if URL exists
-            if (msg.value && msg.value.startsWith('http')) {
-              console.log('[自动获取] URL 已存在，自动拉取数据...');
-              btnFetch.click();
-            }
-          }
-          if (msg.key === 'last_component_id' && msg.value) {
-            console.log('[自动恢复] 上次选择的 Component ID:', msg.value);
-            // 发送消息到后端，请求验证并加载这个 Component
-            parent.postMessage({ 
-              pluginMessage: { 
-                type: 'restore-component',
-                componentId: msg.value
-              } 
-            }, '*');
-          }
-          
-          if (msg.key === 'cached_data' && msg.value) {
-            try {
-              const parsed = JSON.parse(msg.value);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                 notionData = parsed;
-                 const allKeys = new Set();
-                 parsed.slice(0, 5).forEach(item => Object.keys(item).forEach(k => allKeys.add(k)));
-                 schemaKeys = Array.from(allKeys);
-                 renderPreview(0);
-                 showStep('preview');
-                 setStatus('success', `已載入緩存數據 (${parsed.length} 筆)`);
-              }
-            } catch (e) {
-              console.warn('Failed to parse cached data from storage', e);
-            }
-          }
-
-          if (msg.key === `mapping_${currentComponentId}` && msg.value) {
-            console.log('Loaded saved mappings:', msg.value);
-            renderMappingUI(componentLayers, msg.value);
-            setStatus('success', '已自動套用上次的映射設定');
-          }
-        }
-      } catch (err) {
-        console.error('Window onmessage error:', err);
-        setStatus('error', 'Plugin 錯誤: ' + err.message);
-      }
-    };
-
-    // Refactored renderMappingUI for safety
-    function renderMappingUI(layers, savedMappings = null) {
-      mappingList.innerHTML = '';
-      
-      // Populate ID Select
-      idFieldSelect.innerHTML = '';
-      schemaKeys.forEach(key => {
-        const opt = document.createElement('option');
-        opt.value = key;
-        opt.textContent = key;
-        if (key.toLowerCase() === 'id') opt.selected = true;
-        // Restore ID selection if saved
-        if (savedMappings && savedMappings.idField && key === savedMappings.idField) {
-           opt.selected = true;
-        }
-        idFieldSelect.appendChild(opt);
-      });
-
-      // Populate Layer Mappings
-      layers.forEach(layer => {
-        const div = document.createElement('div');
-        div.className = 'mapping-item';
-        div.dataset.layer = layer.name;
-        div.dataset.type = layer.type;
-
-        let icon = layer.type === 'TEXT' ? 'T' : '🖼️';
-        
-        const layerInfoComp = document.createElement('div');
-        layerInfoComp.className = 'layer-info';
-        layerInfoComp.innerHTML = `
+          const layerInfoComp = document.createElement('div');
+          layerInfoComp.className = 'layer-info';
+          layerInfoComp.innerHTML = `
             <span class="layer-icon">${icon}</span>
             <span class="layer-name" title="${layer.name}">${layer.name}</span>
             <span class="layer-type">${layer.type}</span>
         `;
 
-        const select = document.createElement('select');
-        select.dataset.dtype = layer.type === 'TEXT' ? 'text' : 'image';
-        
-        // Default Ignore Option
-        const defaultOpt = document.createElement('option');
-        defaultOpt.value = '__ignore__';
-        defaultOpt.textContent = '-- 忽略 --';
-        select.appendChild(defaultOpt);
+          const select = document.createElement('select');
+          select.dataset.dtype = layer.type === 'TEXT' ? 'text' : 'image';
 
-        // Auto-match logic
-        let selectedField = '__ignore__'; 
-        
-        // 1. Try saved mapping first
-        if (savedMappings && Array.isArray(savedMappings.mappings)) {
-           const found = savedMappings.mappings.find(m => m.layerName === layer.name);
-           if (found) selectedField = found.dataField;
-        } 
-        
-        // 2. If no saved mapping, try auto-match
-        if (selectedField === '__ignore__') {
+          // Default Ignore Option
+          const defaultOpt = document.createElement('option');
+          defaultOpt.value = '__ignore__';
+          defaultOpt.textContent = '-- 忽略 --';
+          select.appendChild(defaultOpt);
+
+          // Auto-match logic
+          let selectedField = '__ignore__';
+
+          // 1. Try saved mapping first
+          if (savedMappings && Array.isArray(savedMappings.mappings)) {
+            const found = savedMappings.mappings.find(m => m.layerName === layer.name);
+            // Backward compatibility: check both dataField and notionField
+            if (found) selectedField = found.dataField || found.notionField || '__ignore__';
+          }
+
+          // 2. If no saved mapping, try auto-match
+          if (selectedField === '__ignore__') {
             const cleanName = layer.name.replace(/^#/, '');
             if (schemaKeys.includes(layer.name)) {
-               selectedField = layer.name;
+              selectedField = layer.name;
             } else if (schemaKeys.includes(cleanName)) {
-               selectedField = cleanName;
+              selectedField = cleanName;
             }
-        }
-
-        // Add Schema Options
-        schemaKeys.forEach(k => {
-          const opt = document.createElement('option');
-          opt.value = k;
-          opt.textContent = k;
-          if (k === selectedField) opt.selected = true;
-          select.appendChild(opt);
-        });
-
-        div.appendChild(layerInfoComp);
-        div.appendChild(select);
-        mappingList.appendChild(div);
-      });
-    }
-
-    // Step 4: Sync
-    btnSync.onclick = () => {
-      try {
-        console.log('點擊同步按鈕 (Click triggered)');
-        setStatus('loading', '正在開始同步...'); // Immediate feedback
-        
-        const mappings = [];
-        // Only select from the mapping list to avoid preview items
-        const items = mappingList.querySelectorAll('.mapping-item');
-        console.log(`找到 ${items.length} 個映射項目`);
-
-        items.forEach(item => {
-          const layerName = item.dataset.layer;
-          const layerType = item.dataset.type;
-          const select = item.querySelector('select');
-          
-          if (!select) {
-            console.warn('Skipping item without select:', item);
-            return;
           }
-          
-          const dataField = select.value;
-          
-          if (dataField && dataField !== '__ignore__') {
-            mappings.push({ layerName, dataField, dataType: layerType !== 'TEXT' ? 'image' : 'text' });
-          }
+
+          // Add Schema Options
+          schemaKeys.forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k;
+            opt.textContent = k;
+            if (k === selectedField) opt.selected = true;
+            select.appendChild(opt);
+          });
+
+          div.appendChild(layerInfoComp);
+          div.appendChild(select);
+          mappingList.appendChild(div);
         });
-
-        console.log('生成的映射規則:', mappings);
-        currentMappings = mappings; // Save mappings for image phase
-
-        if (mappings.length === 0) {
-          console.warn('映射規則為空');
-          return setStatus('error', '請至少設定一個映射欄位');
-        }
-
-        const idField = idFieldSelect.value;
-        console.log('ID Field:', idField);
-
-        // Save Mappings for future use
-        saveStorage('mapping_' + currentComponentId, { 
-           mappings: mappings, 
-           idField: idField 
-        });
-
-        // Hide Sync Again button if visible from previous run
-        const btnAgain = document.getElementById('btn-sync-again');
-        if (btnAgain) btnAgain.classList.add('hidden');
-
-        parent.postMessage({ 
-          pluginMessage: { 
-            type: 'sync-mapped-data',
-            componentId: currentComponentId,
-            data: notionData,
-            mappings,
-            idField
-          } 
-        }, '*');
-        
-        console.log('已發送 sync-mapped-data 訊息');
-        setStatus('loading', '正在同步數據... (請稍候)');
-      } catch (e) {
-        console.error('Sync Button Error:', e);
-        setStatus('error', '同步按鈕錯誤: ' + e.message);
       }
-    };
-    
-    // Create Sync Again Button dynamically
-    const btnSyncAgain = document.createElement('button');
-    btnSyncAgain.id = 'btn-sync-again';
-    btnSyncAgain.className = 'w-full hidden'; // Initially hidden
-    btnSyncAgain.style.marginTop = '8px';
-    btnSyncAgain.style.background = '#4CAF50';
-    btnSyncAgain.textContent = '🔄 再次同步 (Fetch & Sync)';
-    btnSyncAgain.onclick = async () => {
-       setStatus('loading', '正在重新拉取數據...');
-       const success = await fetchData();
-       if (success) {
+
+      // Step 4: Sync
+      btnSync.onclick = () => {
+        try {
+          console.log('點擊同步按鈕 (Click triggered)');
+          setStatus('loading', '正在開始同步...'); // Immediate feedback
+
+          const mappings = [];
+          // Only select from the mapping list to avoid preview items
+          const items = mappingList.querySelectorAll('.mapping-item');
+          console.log(`找到 ${items.length} 個映射項目`);
+
+          items.forEach(item => {
+            const layerName = item.dataset.layer;
+            const layerType = item.dataset.type;
+            const select = item.querySelector('select');
+
+            if (!select) {
+              console.warn('Skipping item without select:', item);
+              return;
+            }
+
+            const dataField = select.value;
+
+            if (dataField && dataField !== '__ignore__') {
+              mappings.push({ layerName, dataField, dataType: layerType !== 'TEXT' ? 'image' : 'text' });
+            }
+          });
+
+          console.log('生成的映射規則:', mappings);
+          currentMappings = mappings; // Save mappings for image phase
+
+          if (mappings.length === 0) {
+            console.warn('映射規則為空');
+            return setStatus('error', '請至少設定一個映射欄位');
+          }
+
+          const idField = idFieldSelect.value;
+          console.log('ID Field:', idField);
+
+          // Save Mappings for future use
+          saveStorage('mapping_' + currentComponentId, {
+            mappings: mappings,
+            idField: idField
+          });
+
+          // Hide Sync Again button if visible from previous run
+          const btnAgain = document.getElementById('btn-sync-again');
+          if (btnAgain) btnAgain.classList.add('hidden');
+
+          parent.postMessage({
+            pluginMessage: {
+              type: 'sync-mapped-data',
+              componentId: currentComponentId,
+              templateId: currentTemplateId,
+              data: notionData,
+              mappings,
+              idField
+            }
+          }, '*');
+
+          console.log('已發送 sync-mapped-data 訊息');
+          setStatus('loading', '正在同步數據... (請稍候)');
+        } catch (e) {
+          console.error('Sync Button Error:', e);
+          setStatus('error', '同步按鈕錯誤: ' + e.message);
+        }
+      };
+
+      // Create Sync Again Button dynamically
+      const btnSyncAgain = document.createElement('button');
+      btnSyncAgain.id = 'btn-sync-again';
+      btnSyncAgain.className = 'w-full hidden'; // Initially hidden
+      btnSyncAgain.style.marginTop = '8px';
+      btnSyncAgain.style.background = '#4CAF50';
+      btnSyncAgain.textContent = '🔄 再次同步 (Fetch & Sync)';
+      btnSyncAgain.onclick = async () => {
+        setStatus('loading', '正在重新拉取數據...');
+        const success = await fetchData();
+        if (success) {
           // Data refreshed, notionData updated.
           // Trigger Sync immediately
           setTimeout(() => btnSync.click(), 500);
-       }
-    };
-    // Append to Step 3 container
-    document.getElementById('step-3').appendChild(btnSyncAgain);
+        }
+      };
+      // Append to Step 3 container
+      document.getElementById('step-3').appendChild(btnSyncAgain);
 
-    function showSyncAgain() {
-       btnSyncAgain.classList.remove('hidden');
-    }
+      function showSyncAgain() {
+        btnSyncAgain.classList.remove('hidden');
+      }
 
-    // --- Storage Helpers (Phase 2 & 3) ---
-    function saveStorage(key, value) {
-      // Save to Figma ClientStorage (Async, Persistent)
-      // Removed localStorage to avoid SecurityError in some environments
-      parent.postMessage({ pluginMessage: { type: 'storage-set', key, value } }, '*');
-    }
+      // --- Storage Helpers (Phase 2 & 3) ---
+      function saveStorage(key, value) {
+        // Save to Figma ClientStorage (Async, Persistent)
+        // Removed localStorage to avoid SecurityError in some environments
+        parent.postMessage({ pluginMessage: { type: 'storage-set', key, value } }, '*');
+      }
 
-    function loadStorage(key) {
-      return new Promise((resolve) => {
-        const handler = (e) => {
-          const msg = e.data.pluginMessage;
-          if (msg && msg.type === 'storage-data' && msg.key === key) {
+      function loadStorage(key) {
+        return new Promise((resolve) => {
+          const handler = (e) => {
+            const msg = e.data.pluginMessage;
+            if (msg && msg.type === 'storage-data' && msg.key === key) {
+              window.removeEventListener('message', handler);
+              resolve(msg.value);
+            }
+          };
+          window.addEventListener('message', handler);
+          parent.postMessage({ pluginMessage: { type: 'storage-get', key } }, '*');
+
+          // Timeout
+          setTimeout(() => {
             window.removeEventListener('message', handler);
-            resolve(msg.value);
-          }
-        };
-        window.addEventListener('message', handler);
-        parent.postMessage({ pluginMessage: { type: 'storage-get', key } }, '*');
-        
-        // Timeout
-        setTimeout(() => {
-          window.removeEventListener('message', handler);
-          resolve(null);
-        }, 2000);
-      });
-    }
+            resolve(null);
+          }, 2000);
+        });
+      }
 
-    // --- Init ---
-    try {
-      // On load → get saved webhook URL and last component
-      loadStorage('webhook_url');
-      loadStorage('last_component_id');
-      loadStorage('cached_data');
+      // --- Init ---
+      try {
+        // On load → get saved webhook URL and last component
+        loadStorage('webhook_url');
+        loadStorage('last_component_id');
+        loadStorage('cached_data');
 
-    } catch (e) {
-      console.warn('Init Error', e);
-    }
+      } catch (e) {
+        console.warn('Init Error', e);
+      }
 
-    webhookInput.onchange = () => {
-      saveStorage('webhook_url', webhookInput.value);
-    };
-  </script>
+      webhookInput.onchange = () => {
+        saveStorage('webhook_url', webhookInput.value);
+      };
+    </script>
 </body>
+
 </html>

@@ -65,24 +65,30 @@ figma.ui.onmessage = async (msg: any) => {
         if (compSet.children.length > 0) {
           component = compSet.children[0] as ComponentNode;
         }
+      } else if (selected.type === 'FRAME' || selected.type === 'GROUP') {
+        // [New] Allow Frames and Groups to be used as templates
+        component = selected as unknown as ComponentNode; // Cast for now, but we handle it generically
       }
 
       if (!component) {
-        console.error('選擇的節點不是 Component:', selected.type);
+        console.error('選擇的節點不是有效的 Template:', selected.type);
         figma.ui.postMessage({
           type: 'error',
-          message: `選擇的是 ${selected.type}，請選擇 Component 或 Instance。`
+          message: `選擇的是 ${selected.type}，請選擇 Component、Instance、Frame 或 Group。`
         });
         return;
       }
 
       console.log('找到 Component:', component.name, component.id);
       const layers = collectLayers(component);
+      const mappingId = getMappingId(component);
+      console.log('找到 Component:', component.name, 'Mapping ID:', mappingId);
       console.log('收集到圖層數量:', layers.length);
 
       figma.ui.postMessage({
         type: 'component-layers',
-        componentId: component.id,
+        componentId: mappingId,
+        actualTemplateId: component.id, // [New] Pass back the specific node ID
         componentName: component.name,
         layers: layers
       });
@@ -105,7 +111,7 @@ figma.ui.onmessage = async (msg: any) => {
 
       const existingMap = buildExistingMap();
       const nodes = existingMap.get(notionId); // 现在返回数组
-      
+
       // 更新所有使用此 ID 的 instance
       if (nodes && nodes.length > 0) {
         for (const node of nodes) {
@@ -127,8 +133,8 @@ figma.ui.onmessage = async (msg: any) => {
                 let urlMap: Record<string, string> = {};
                 try {
                   if (existingJson) urlMap = JSON.parse(existingJson);
-                } catch {}
-                
+                } catch { }
+
                 urlMap[layerName] = imageUrl;
                 frame.setPluginData('img_urls', JSON.stringify(urlMap));
               }
@@ -155,12 +161,12 @@ figma.ui.onmessage = async (msg: any) => {
         const nodes = existingMap.get(id); // 现在返回数组
         // 取第一个节点的图片 URL（所有相同 ID 的 instance 应该有相同的图片）
         if (nodes && nodes.length > 0) {
-           const json = nodes[0].getPluginData('img_urls');
-           if (json) {
-             try {
-                resultMap[id] = JSON.parse(json);
-             } catch {}
-           }
+          const json = nodes[0].getPluginData('img_urls');
+          if (json) {
+            try {
+              resultMap[id] = JSON.parse(json);
+            } catch { }
+          }
         }
       }
       figma.ui.postMessage({ type: 'image-urls', urls: resultMap });
@@ -177,22 +183,22 @@ figma.ui.onmessage = async (msg: any) => {
   if (msg.type === 'read-instance-id') {
     try {
       const selection = figma.currentPage.selection;
-      
+
       if (selection.length === 0) {
         figma.ui.postMessage({ type: 'error', message: '请先选中一个 Instance' });
         return;
       }
-      
+
       const node = selection[0];
       const notionId = node.getPluginData(PLUGIN_DATA_KEY);
-      
+
       if (!notionId) {
         figma.ui.postMessage({ type: 'error', message: '该节点没有 Notion ID（可能不是由插件创建的）' });
         return;
       }
-      
-      figma.ui.postMessage({ 
-        type: 'instance-id-info', 
+
+      figma.ui.postMessage({
+        type: 'instance-id-info',
         currentId: notionId,
         nodeName: node.name
       });
@@ -210,23 +216,23 @@ figma.ui.onmessage = async (msg: any) => {
     try {
       const { newId } = msg;
       const selection = figma.currentPage.selection;
-      
+
       if (selection.length === 0) {
         figma.ui.postMessage({ type: 'error', message: '请先选中一个 Instance' });
         return;
       }
-      
+
       if (!newId || newId.trim() === '') {
         figma.ui.postMessage({ type: 'error', message: '请输入有效的 ID' });
         return;
       }
-      
+
       const node = selection[0];
       const oldId = node.getPluginData(PLUGIN_DATA_KEY);
       node.setPluginData(PLUGIN_DATA_KEY, newId.trim());
-      
-      figma.ui.postMessage({ 
-        type: 'id-updated', 
+
+      figma.ui.postMessage({
+        type: 'id-updated',
         message: `ID 已更新: ${oldId || '(无)'} → ${newId.trim()}`
       });
     } catch (e) {
@@ -243,22 +249,23 @@ figma.ui.onmessage = async (msg: any) => {
     try {
       const { componentId } = msg;
       const node = await figma.getNodeByIdAsync(componentId);
-      
-      if (!node || node.type !== 'COMPONENT') {
+
+      if (!node || (node.type !== 'COMPONENT' && node.type !== 'FRAME' && node.type !== 'GROUP' && node.type !== 'COMPONENT_SET')) {
         figma.ui.postMessage({
           type: 'error',
-          message: 'Component 不存在或已被删除'
+          message: 'Template 節點不存在或類型不符'
         });
         return;
       }
-      
-      const component = node as ComponentNode;
-      const layers = collectLayers(component);
-      
+
+      // If it's a ComponentSet, we use the first child as the visual template for layer discovery
+      const templateNode = node.type === 'COMPONENT_SET' ? (node as ComponentSetNode).children[0] : node;
+      const layers = collectLayers(templateNode as SceneNode);
+
       figma.ui.postMessage({
         type: 'component-data',
-        componentName: component.name,
-        componentId: component.id,
+        componentName: node.name,
+        componentId: node.id,
         layers: layers
       });
     } catch (e) {
@@ -277,7 +284,7 @@ figma.ui.onmessage = async (msg: any) => {
   if (msg.type === 'load-from-selection') {
     try {
       const selected = figma.currentPage.selection;
-      
+
       if (selected.length === 0) {
         figma.ui.postMessage({
           type: 'error',
@@ -285,37 +292,51 @@ figma.ui.onmessage = async (msg: any) => {
         });
         return;
       }
-      
+
       const node = selected[0];
-      
-      if (node.type !== 'INSTANCE') {
+      let template: SceneNode | null = null;
+      let mappingId: string = '';
+
+      if (node.type === 'INSTANCE') {
+        template = await (node as InstanceNode).getMainComponentAsync();
+        mappingId = template ? getMappingId(template) : '';
+      } else if (node.type === 'FRAME' || node.type === 'GROUP') {
+        // [New] Check if it has recovery ID
+        const recoveredId = node.getPluginData(PLUGIN_DATA_COMPONENT);
+        if (recoveredId) {
+          console.log('[從選取加載] 發現恢復 ID:', recoveredId);
+          const recoveredNode = await figma.getNodeByIdAsync(recoveredId);
+          if (recoveredNode) {
+            template = recoveredNode as SceneNode;
+            mappingId = recoveredNode.type === 'COMPONENT' ? getMappingId(recoveredNode) : recoveredId;
+          }
+        }
+
+        // Fallback to itself
+        if (!template) {
+          template = node;
+          mappingId = node.id;
+        }
+      }
+
+      if (!template || !mappingId) {
         figma.ui.postMessage({
           type: 'error',
-          message: '请选中一个 Instance（不是 Component）'
+          message: '無法從選取項找到有效的 Template (請選擇 Instance, Frame 或 Group)'
         });
         return;
       }
-      
-      const instance = node as InstanceNode;
-      const component = await instance.getMainComponentAsync();
-      
-      if (!component) {
-        figma.ui.postMessage({
-          type: 'error',
-          message: 'Instance 的 Component 不存在'
-        });
-        return;
-      }
-      
-      console.log('[从选中加载] Component:', component.name);
-      
-      // 读取 Component 的图层信息
-      const layers = collectLayers(component);
-      
+
+      console.log('[從選取加載] Template:', template.name, 'Mapping ID:', mappingId);
+
+      // 讀取 Template 的圖層信息
+      const layers = collectLayers(template);
+
       figma.ui.postMessage({
         type: 'component-data',
-        componentName: component.name,
-        componentId: component.id,
+        componentName: template.name,
+        componentId: mappingId,
+        actualTemplateId: template.id, // [New] Pass back the specific node ID
         layers: layers,
         fromSelection: true
       });
@@ -336,44 +357,44 @@ figma.ui.onmessage = async (msg: any) => {
     try {
       const { componentId, mappings, idField, notionData } = msg;
       const selection = figma.currentPage.selection;
-      
+
       if (selection.length === 0) {
-        figma.ui.postMessage({ type: 'error', message: '请先选中至少一个 Instance' });
+        figma.ui.postMessage({ type: 'error', message: '請先選取至少一個物件' });
         return;
       }
-      
+
       // 过滤出有 notionId 的节点
-      const instancesWithId = selection.filter(node => {
-        return node.getPluginData(PLUGIN_DATA_KEY);
-      });
-      
-      if (instancesWithId.length === 0) {
-        figma.ui.postMessage({ type: 'error', message: '选中的节点中没有插件创建的 Instance' });
+      const nodesWithId = selection.filter(node => node.getPluginData(PLUGIN_DATA_KEY));
+
+      if (nodesWithId.length === 0) {
+        figma.ui.postMessage({ type: 'error', message: '選中的物件中沒有可同步的數據 (Notion ID)' });
         return;
       }
-      
+
       // 获取所有需要同步的 notionIds
-      console.log(`找到 ${instancesWithId.length} 个选中的 instance 有 ID 数据`);
-      
-      // 验证 component 存在
-      const component = await figma.getNodeByIdAsync(componentId) as ComponentNode | null;
-      if (!component) {
-        figma.ui.postMessage({ type: 'error', message: 'Component 不存在' });
+      console.log(`找到 ${nodesWithId.length} 個選中的物件有 ID 數據`);
+
+      // 验证 template 存在
+      const templateNode = await figma.getNodeByIdAsync(componentId) as SceneNode | null;
+      if (!templateNode) {
+        figma.ui.postMessage({ type: 'error', message: 'Template 不存在' });
         return;
       }
-      await loadAllFontsFromComponent(component);
-      
-      // 更新每个选中的 instance
+      if ('children' in templateNode) {
+        await loadAllFontsFromComponent(templateNode as any);
+      }
+
+      // 更新每個選中的物件
       let updatedCount = 0;
       const updatedNotionIds: string[] = [];
-      
-      for (const node of instancesWithId) {
+
+      for (const node of nodesWithId) {
         const notionId = node.getPluginData(PLUGIN_DATA_KEY);
         // 从数据中找到对应记录
         const record = notionData.find((item: any) => {
           return String(item[idField] || '') === notionId;
         });
-        
+
         if (record) {
           await updateInstance(node, record, mappings);
           updatedCount++;
@@ -382,13 +403,13 @@ figma.ui.onmessage = async (msg: any) => {
           console.warn(`未找到 ID ${notionId} 对应的数据记录`);
         }
       }
-      
-      figma.ui.postMessage({ 
-        type: 'sync-selected-done', 
-        message: `已更新 ${updatedCount}/${instancesWithId.length} 个 Instance`,
+
+      figma.ui.postMessage({
+        type: 'sync-selected-done',
+        message: `已更新 ${updatedCount}/${nodesWithId.length} 個物件`,
         updatedCount: updatedCount,
         updatedNotionIds: updatedNotionIds,  // 返回更新的IDs
-        totalCount: instancesWithId.length
+        totalCount: nodesWithId.length
       });
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : String(e);
@@ -403,10 +424,8 @@ figma.ui.onmessage = async (msg: any) => {
   if (msg.type === 'sync-mapped-data') {
     console.log('收到 sync-mapped-data 請求');
     try {
-      const { componentId, data, mappings, idField } = msg as SyncRequest;
-      console.log('Component ID:', componentId);
-      console.log('Data Length:', data ? data.length : 0);
-      console.log('Mappings:', mappings);
+      const { componentId, templateId, data, mappings, idField } = msg;
+      console.log('Mapping ID:', componentId, 'Template ID:', templateId);
 
       if (!data || !Array.isArray(data) || data.length === 0) {
         figma.ui.postMessage({ type: 'error', message: '未收到有效數據' });
@@ -418,23 +437,22 @@ figma.ui.onmessage = async (msg: any) => {
         return;
       }
 
-      // 1. 找到來源 Component
-      const component = await figma.getNodeByIdAsync(componentId) as ComponentNode | null;
-      if (!component) {
-        console.error('找不到 Component ID:', componentId);
-        figma.ui.postMessage({ type: 'error', message: '找不到來源 Component，可能已刪除' });
-        return;
-      }
-      if (component.type !== 'COMPONENT') {
-        console.error('ID 對應的不是 Component:', component.type);
-        figma.ui.postMessage({ type: 'error', message: '目標不是 Component' });
+      // 1. 找到來源 Template
+      // if templateId exists, use it. Otherwise fallback to componentId
+      const targetSourceId = templateId || componentId;
+      const templateNode = await figma.getNodeByIdAsync(targetSourceId) as SceneNode | null;
+      if (!templateNode) {
+        console.error('找不到 Template ID:', targetSourceId);
+        figma.ui.postMessage({ type: 'error', message: '找不到來源 Template，可能已刪除' });
         return;
       }
 
       sendStatus(`收到 ${data.length} 條數據，正在加載字型...`);
 
       // 2. 預加載所有需要的字型
-      await loadAllFontsFromComponent(component);
+      if ('children' in templateNode) {
+        await loadAllFontsFromComponent(templateNode as any);
+      }
 
       // 3. 建立已有 Instance 索引 (notionId → SceneNode)
       sendStatus('正在掃描畫布上的現有 Instance...');
@@ -445,12 +463,12 @@ figma.ui.onmessage = async (msg: any) => {
       // 4. 計算新 Instance 的起始位置
       let newIndex = 0;
       const startY = getNextAvailableY();
-      const cardWidth = component.width;
-      const cardHeight = component.height;
+      const cardWidth = 'width' in templateNode ? (templateNode as any).width : 100;
+      const cardHeight = 'height' in templateNode ? (templateNode as any).height : 100;
 
       // 5. 處理所有映射 (Text & Visibility)
       // 圖片內容由 UI 後續通過 set-image 處理，但可見性在此處理
-      
+
       let updatedCount = 0;
       let createdCount = 0;
       const affectedNodes: SceneNode[] = [];
@@ -474,8 +492,14 @@ figma.ui.onmessage = async (msg: any) => {
           const x = col * (cardWidth + CARD_GAP);
           const y = startY + row * (cardHeight + CARD_GAP);
 
-          const instance = component.createInstance();
-          // 強制放到當前 Page 的根目錄，避免被 Component 的父層級影響位置
+          let instance: SceneNode;
+          if (templateNode.type === 'COMPONENT') {
+            instance = (templateNode as ComponentNode).createInstance();
+          } else {
+            instance = templateNode.clone() as SceneNode;
+          }
+
+          // 強制放到當前 Page 的根目錄，避免被 Template 的父層級影響位置
           figma.currentPage.appendChild(instance);
           instance.x = x;
           instance.y = y;
@@ -483,7 +507,7 @@ figma.ui.onmessage = async (msg: any) => {
           instance.setPluginData(PLUGIN_DATA_COMPONENT, componentId);
 
           // 填充數據
-          await fillInstanceData(instance, record, mappings);
+          await fillInstanceData(instance as InstanceNode | FrameNode | GroupNode, record, mappings);
 
           createdCount++;
           newIndex++;
@@ -539,6 +563,27 @@ figma.ui.onmessage = async (msg: any) => {
 
 function sendStatus(message: string) {
   figma.ui.postMessage({ type: 'status', message });
+}
+
+/** 獲取用於儲存映射配置的 ID (如果是 Variant 則返還 ComponentSet ID) */
+function getMappingId(node: SceneNode): string {
+  let target = node;
+
+  // 1. 如果是 Instance，先找其 Master Component
+  if (target.type === 'INSTANCE') {
+    const mainComp = (target as InstanceNode).mainComponent;
+    if (mainComp) target = mainComp;
+  }
+
+  // 2. 如果是 Component 且屬於 ComponentSet (Variant)，返還 Set ID
+  if (target.type === 'COMPONENT') {
+    const comp = target as ComponentNode;
+    if (comp.parent && comp.parent.type === 'COMPONENT_SET') {
+      return comp.parent.id;
+    }
+  }
+
+  return target.id;
 }
 
 /** 遞歸收集 Component 中所有可映射的圖層 */
@@ -614,8 +659,8 @@ function findChildByName(parent: FrameNode | GroupNode | InstanceNode, name: str
   return null;
 }
 
-/** 預加載 Component 中所有 TextNode 使用的字型 */
-async function loadAllFontsFromComponent(component: ComponentNode) {
+/** 預加載 Template 中所有 TextNode 使用的字型 */
+async function loadAllFontsFromComponent(template: SceneNode) {
   const textNodes: TextNode[] = [];
 
   function collectTextNodes(node: SceneNode) {
@@ -623,13 +668,13 @@ async function loadAllFontsFromComponent(component: ComponentNode) {
       textNodes.push(node as TextNode);
     }
     if ('children' in node) {
-      for (const child of (node as FrameNode).children) {
+      for (const child of (node as any).children) {
         collectTextNodes(child);
       }
     }
   }
 
-  collectTextNodes(component);
+  collectTextNodes(template);
 
   for (const textNode of textNodes) {
     const fontName = textNode.fontName;
@@ -647,9 +692,46 @@ async function loadAllFontsFromComponent(component: ComponentNode) {
 // Instance 數據填充
 // ====================================================================
 
-/** 填充 Instance / Frame 的數據 (Text & Visibility) */
+/** 偵測並套用 Figma 原生清單樣式 (如 1. 2. 3.) */
+async function parseAndApplyListStyle(textNode: TextNode, rawValue: string) {
+  const lines = rawValue.split('\n');
+  const numberedPattern = /^\d+\.\s+/;
+
+  // 檢查是否符合數字清單特徵 (至少第一行係以 1. 開頭)
+  const isNumberedList = numberedPattern.test(lines[0]);
+
+  if (isNumberedList) {
+    // 清除手動輸入嘅 "1. ", "2. " 前綴，由 Figma 自動生成
+    const cleanedLines = lines.map(line => line.replace(numberedPattern, ''));
+    const cleanedText = cleanedLines.join('\n');
+
+    textNode.characters = cleanedText;
+    // 套用 ORDERED (數字) 清單樣式到全段文字
+    textNode.setRangeListOptions(0, cleanedText.length, { type: 'ORDERED' });
+  } else {
+    // 普通文字，確保清單樣式係 NONE
+    textNode.characters = rawValue;
+    textNode.setRangeListOptions(0, rawValue.length, { type: 'NONE' });
+  }
+}
+
+/** 將各種輸入轉換為 Boolean (支援 Yes/No, True/False, 1/0, Checked/Unchecked) */
+function parseBoolean(val: any): boolean {
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'number') return val !== 0;
+  if (typeof val === 'string') {
+    const s = val.toLowerCase().trim();
+    if (s === 'true' || s === 'yes' || s === '1' || s === 'checked' || s === 'ok') return true;
+    if (s === 'false' || s === 'no' || s === '0' || s === 'unchecked' || s === '' || s === 'null') return false;
+    // 如果是普通文字且不為空，可視為 true (或者根據需求調整)
+    return s.length > 0;
+  }
+  return !!val;
+}
+
+/** 填充 Instance / Frame / Group 的數據 (Text & Visibility) */
 async function fillInstanceData(
-  instance: InstanceNode | FrameNode,
+  instance: InstanceNode | FrameNode | GroupNode,
   record: Record<string, any>,
   mappings: FieldMapping[]
 ) {
@@ -660,20 +742,27 @@ async function fillInstanceData(
     const value = record[mapping.dataField];
     if (value === undefined || value === null) continue;
 
-    // 1. Boolean Coercion / Visibility Control
-    if (typeof value === 'boolean') {
-      targetNode.visible = value;
-      continue; 
-    }
+    // 1. 如果數據是明確的布林意圖，或者圖層類型不是 TEXT，則優先處理可見性
+    // 注意：如果用戶把同一個欄位 mapping 到 TEXT 圖層，我們通常希望既控制隱藏也顯示文字
+    const isVisible = parseBoolean(value);
+    targetNode.visible = isVisible;
 
-    // 2. Text Content
+    // 2. 如果圖層是隱藏的，就不需要更新文字了 (節省效能)
+    if (!isVisible) continue;
+
+    // 3. Text Content (僅當它是 TEXT 節點且 value 不是單純的布林值時更新)
     if (targetNode.type === 'TEXT') {
+      // 如果 value 是 boolean，我們不希望把 "true" 字樣寫進去，除非它是唯一的內容
+      if (typeof value === 'boolean') continue;
+
       const textNode = targetNode as TextNode;
       const fontName = textNode.fontName;
       if (fontName !== figma.mixed) {
         await figma.loadFontAsync(fontName);
       }
-      textNode.characters = String(value);
+
+      // 使用清單樣式處理邏輯
+      await parseAndApplyListStyle(textNode, String(value));
     }
   }
 }
@@ -685,7 +774,7 @@ async function updateInstance(
   mappings: FieldMapping[]
 ) {
   if (!('children' in node)) return;
-  // 此處我們允許 InstanceNode 或 FrameNode (Detached Instance)
-  const indatanceOrFrame = node as InstanceNode | FrameNode; 
-  await fillInstanceData(indatanceOrFrame, record, mappings);
+  // 此處我們允許 InstanceNode, FrameNode 或 GroupNode
+  const container = node as InstanceNode | FrameNode | GroupNode;
+  await fillInstanceData(container, record, mappings);
 }

@@ -1,5 +1,6 @@
 {
   "name": "SyncFromNotion",
+  "id": "1605151004653394645",
   "api": "1.0.0",
   "main": "code.js",
   "capabilities": [],
