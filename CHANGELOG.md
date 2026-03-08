@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.2] - 2026-03-08
+
+### Fixed
+- **Notion Image Auto-Update**: Resolved an issue where changed S3 images in Notion were not synced if the S3 base path remained unchanged. The plugin now uses a fast `Content-Length` header check to trigger an update when image file size changes.
+
 ## [1.2.1] - 2026-02-16
 
 ### Fixed

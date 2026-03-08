@@ -1157,7 +1157,18 @@
                 console.log(`${progressPrefix}   → 强制更新模式，直接下载`);
               } else {
                 // Notion URLs change query params (signatures) but base path is stable.
-                const oldUrl = currentImages[m.layerName]; // Get existing URL for this layer
+                const oldImageData = currentImages[m.layerName]; // Get existing data for this layer
+                let oldUrl = '';
+                let oldSize = 0;
+                
+                // 兼容舊版數據 (字串) 或新版數據 (物件)
+                if (typeof oldImageData === 'string') {
+                  oldUrl = oldImageData;
+                } else if (oldImageData && typeof oldImageData === 'object') {
+                  oldUrl = oldImageData.url || '';
+                  oldSize = oldImageData.size || 0;
+                }
+
                 const cleanOld = oldUrl ? oldUrl.split('?')[0] : '';
                 const cleanNew = newUrl.split('?')[0];
 
@@ -1169,8 +1180,31 @@
                   console.log(`   Match: ${cleanOld === cleanNew}`);
                 }
 
+                let skipDownload = false;
+
                 if (cleanOld === cleanNew) {
-                  console.log(`${progressPrefix}   → 跳过（URL相同）`);
+                  if (oldSize > 0) {
+                    try {
+                      const controller = new AbortController();
+                      const checkResp = await fetch(newUrl, { method: 'GET', signal: controller.signal });
+                      const newSize = parseInt(checkResp.headers.get('content-length') || '0', 10);
+                      controller.abort();
+                      
+                      if (newSize > 0 && newSize === oldSize) {
+                         skipDownload = true;
+                         console.log(`${progressPrefix}   → 跳过（URL相同且容量一致: ${oldSize} bytes）`);
+                      } else {
+                         console.log(`${progressPrefix}   → 圖片已更換！(容量改變: 舊 ${oldSize} bytes -> 新 ${newSize} bytes)，將重新下載`);
+                      }
+                    } catch (e) {
+                      console.warn(`${progressPrefix}   → 檢查容量大小失敗，將自動重新下載:`, e);
+                    }
+                  } else {
+                    console.log(`${progressPrefix}   → 缺乏舊圖片的容量紀錄，將重新下載以更新紀錄`);
+                  }
+                }
+                
+                if (skipDownload) {
                   skippedSame++;
                   continue; // SKIP DOWNLOAD
                 }
@@ -1180,23 +1214,27 @@
                 const startTime = Date.now();
                 const cleanUrl = newUrl.split('?')[0];
                 let compressedBytes;
+                let originalSize = 0;
 
                 if (sessionImageCache.has(cleanUrl)) {
                   console.log(`${progressPrefix} → 命中 Session 緩存，跳過下載: ${m.layerName}`);
-                  compressedBytes = sessionImageCache.get(cleanUrl);
+                  const cached = sessionImageCache.get(cleanUrl);
+                  compressedBytes = cached.bytes;
+                  originalSize = cached.originalSize;
                 } else {
                   console.log(`${progressPrefix} → 開始下載 (New/Changed): ${m.layerName}`);
                   const resp = await fetchWithRetry(newUrl, 3);
                   const dlTime = ((Date.now() - startTime) / 1000).toFixed(1);
 
                   const buffer = await resp.arrayBuffer();
+                  originalSize = buffer.byteLength;
                   const compressStart = Date.now();
                   compressedBytes = await compressImage(buffer);
 
                   const compressTime = ((Date.now() - compressStart) / 1000).toFixed(1);
                   console.log(`${progressPrefix} → 下載耗時: ${dlTime}s, 壓縮耗時: ${compressTime}s`);
 
-                  sessionImageCache.set(cleanUrl, compressedBytes);
+                  sessionImageCache.set(cleanUrl, { bytes: compressedBytes, originalSize: originalSize });
                   downloaded++;
                 }
 
@@ -1206,7 +1244,8 @@
                     notionId: idValue,
                     layerName: m.layerName,
                     imageBytes: compressedBytes,
-                    imageUrl: newUrl // Send URL to save
+                    imageUrl: newUrl, // Send URL to save
+                    originalSize: originalSize // 傳送原始大小給後端保存，供下次判斷使用
                   }
                 }, '*');
                 console.log(`${progressPrefix} → 已同步到 Figma: ${m.layerName}`);

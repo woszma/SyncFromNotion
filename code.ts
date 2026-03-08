@@ -126,16 +126,15 @@ figma.ui.onmessage = async (msg: any) => {
               target.fills = [
                 { type: 'IMAGE', imageHash: image.hash, scaleMode: 'FILL' }
               ];
-
-              // Save URL to Instance/Frame PluginData using a JSON object
+              // Save URL and Size to Instance/Frame PluginData using a JSON object
               if (imageUrl) {
                 const existingJson = frame.getPluginData('img_urls');
-                let urlMap: Record<string, string> = {};
+                let urlMap: Record<string, any> = {};
                 try {
                   if (existingJson) urlMap = JSON.parse(existingJson);
                 } catch { }
 
-                urlMap[layerName] = imageUrl;
+                urlMap[layerName] = { url: imageUrl, size: msg.originalSize || 0 };
                 frame.setPluginData('img_urls', JSON.stringify(urlMap));
               }
             }
