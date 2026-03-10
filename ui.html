@@ -320,12 +320,20 @@
       <!-- Mappings will be injected here -->
     </div>
 
+    <!-- [New] 變體選擇 (只限 Component Set) -->
+    <div id="variant-selection" class="hidden mb-16"
+      style="padding:12px; background:#222; border:1px solid #444; border-radius:4px;">
+      <label class="mb-8" style="color:#4da6ff; font-weight:bold;">✨ 默認變體 (Default Variant)</label>
+      <p style="color:#aaa; font-size:10px; margin-bottom:8px;">當需要創建新物件時，會使用此變體</p>
+      <select id="variant-select"></select>
+    </div>
+
     <div class="flex gap-8 mt-4">
       <button id="btn-back-2" class="secondary">⬅️ 重新選擇 Component</button>
       <button id="btn-confirm-mapping" class="w-full secondary">✅ 確認映射</button>
     </div>
 
-    <button id="btn-sync" class="w-full" style="margin-top:8px;">🚀 開始同步 (Sync)</button>
+    <button id="btn-sync" class="w-full" style="margin-top:8px;">🚀 一鍵更新 / 開始同步 (Sync)</button>
 
     <button id="btn-show-tools" class="w-full secondary" style="margin-top:8px;">
       🛠️ 工具：修改 Instance ID
@@ -349,7 +357,7 @@
         <div style="font-size:10px; color:#888; margin-bottom:4px;">当前配置:</div>
         <div id="quick-config-component" style="font-size:11px; color:#4dff88; margin-bottom:2px;">Component: --</div>
         <div id="quick-config-mappings" style="font-size:11px; color:#4da6ff;">映射: --</div>
-        <div id="quick-config-data" style="font-size:11px; color:#ffb84d; margin-top:2px;">数据: --</div>
+        <div id="quick-config-data" style="font-size:11px; color:#ffb84d; margin-top:2px;">數據: --</div>
       </div>
 
       <button id="btn-quick-load" class="w-full secondary">
@@ -362,7 +370,27 @@
       <p style="color:#aaa; margin-bottom:12px; font-size:10px;">只更新選中的物件，唔影響其他數據</p>
 
       <button id="btn-sync-selected" class="w-full" disabled>
-        🔄 同步選中的物件
+        🚀 一鍵更新 / 同步所選 (Sync Selected)
+      </button>
+    </div>
+
+    <!-- 重新關聯舊物件 (Relink) -->
+    <div style="margin-bottom:24px; padding-bottom:24px; border-bottom:1px solid #333;">
+      <h3 style="font-size:12px; margin-bottom:8px;">🔗 重新關聯舊物件 (Relink)</h3>
+      <p style="color:#aaa; margin-bottom:12px; font-size:10px;">如果 Plugin ID 轉咗導致舊物件同步唔到，可以用呢個功能修復</p>
+
+      <div class="mb-8">
+        <label>匹配圖層 (文字內容)</label>
+        <select id="relink-layer-select"></select>
+      </div>
+
+      <div class="mb-16">
+        <label>匹配 Notion 欄位</label>
+        <select id="relink-field-select"></select>
+      </div>
+
+      <button id="btn-relink" class="w-full secondary">
+        ⚡ 開始修復連結 (Relink)
       </button>
     </div>
 
@@ -406,6 +434,7 @@
       let notionData = [];
       let schemaKeys = [];
       let componentLayers = [];
+      let componentVariants = []; // [New] Store variants info
       let currentComponentId = null;
       let currentTemplateId = null; // [New] Specific ID for cloning/instantiating
       let currentMappings = []; // [New] Store mappings for image sync phase
@@ -513,13 +542,14 @@
             if (quickConfigStatus && !quickConfigStatus.classList.contains('hidden')) {
               // 状态已显示，保持
             } else {
-              // 尝试从 storage 加载并显示提示
+              // 嘗試從 storage 加載並顯示提示
               loadStorage('last_component_id').then(savedId => {
+                const selectedCompInfo = document.getElementById('selected-comp-info');
                 if (savedId && selectedCompInfo) {
                   const compNameEl = document.getElementById('comp-name');
                   if (compNameEl && compNameEl.textContent !== '--') {
-                    // 在工具区提示可以使用快速加载
-                    setStatus('info', '提示：可以使用"从选中 Instance 加载配置"或已有配置直接同步');
+                    // 在工具區提示可以使用快速加載
+                    setStatus('info', '提示：可以使用"從選中 Instance 加載配置"或已有配置直接同步');
                   }
                 }
               });
@@ -641,26 +671,26 @@
 
           items.forEach(item => {
             const layerNameEl = item.querySelector('.layer-name');
-            const fieldSelect = item.querySelector('.field-select');
-            const typeSelect = item.querySelector('.type-select');
+            const fieldSelect = item.querySelector('select');
+            const typeSelect = item.querySelector('select'); // Reuse select but check dataset
 
             // 添加 null 检查
-            if (!layerNameEl || !fieldSelect || !typeSelect) {
-              console.warn('映射项缺少必要元素', item);
+            if (!layerNameEl || !fieldSelect) {
+              console.warn('映射項目缺少必要元素', item);
               return;
             }
 
-            if (fieldSelect.value) {
+            if (fieldSelect.value && fieldSelect.value !== '__ignore__') {
               mappings.push({
                 layerName: layerNameEl.textContent,
-                dataField: fieldSelect.value, // Changed from notionField to match loading logic
-                dataType: typeSelect.value
+                dataField: fieldSelect.value,
+                dataType: fieldSelect.dataset.dtype || 'text'
               });
             }
           });
 
           if (mappings.length === 0) {
-            setStatus('warning', '至少需要設置一個映射');
+            setStatus('warning', '請至少設定一個映射項目');
             return;
           }
 
@@ -760,22 +790,35 @@
             console.log('[快速加载] 读取到的映射数据:', savedData);
 
             if (savedData) {
-              // 处理对象格式 {mappings: [...], idField: '...'}
+              // ...existing processing...
               if (savedData.mappings && Array.isArray(savedData.mappings)) {
                 mappings = savedData.mappings;
                 idField = savedData.idField || idField;
                 console.log('[快速加载] 解析映射成功:', mappings);
                 addLog(`載入映射配置: ${mappings.length} 條規則`, 'success');
               } else if (Array.isArray(savedData)) {
-                // [New] Support old bare-array format
                 mappings = savedData;
                 console.log('[快速加载] 解析舊版陣列映射成功:', mappings);
                 addLog(`載入舊版映射配置: ${mappings.length} 條規則`, 'success');
-              } else {
-                console.warn('[快速加载] 映射數據格式不正確', savedData);
-                addLog('⚠️ 映射配置格式錯誤', 'error');
               }
-            } else {
+            } else if (loadResult.actualTemplateId && loadResult.actualTemplateId !== loadResult.componentId) {
+              // FALLBACK: Try loading from specific variant ID
+              console.log('[快速加载] 嘗試 Fallback 讀取實例 ID:', loadResult.actualTemplateId);
+              const fallbackData = await loadStorage('mapping_' + loadResult.actualTemplateId);
+              if (fallbackData) {
+                if (fallbackData.mappings && Array.isArray(fallbackData.mappings)) {
+                  mappings = fallbackData.mappings;
+                  idField = fallbackData.idField || idField;
+                  addLog('⚠️ 偵測到舊版 Variant 配置，已自動恢復 (請重新保存以遷移至新版)', 'warning');
+                  console.log('[快速加载] Fallback 恢復成功:', mappings);
+                } else if (Array.isArray(fallbackData)) {
+                  mappings = fallbackData;
+                  addLog('⚠️ 偵測到舊版 Array 配置，已自動恢復', 'warning');
+                }
+              }
+            }
+
+            if (mappings.length === 0 && !savedData) {
               console.warn('[快速加载] 未找到映射配置，Key:', 'mapping_' + loadResult.componentId);
               addLog('⚠️ 未找到保存的映射配置 (請先手動設定一次)', 'warning');
             }
@@ -804,8 +847,8 @@
             // 5. 更新状态显示
             quickConfigStatus.classList.remove('hidden');
             quickConfigComponent.textContent = `Component: ${loadResult.componentName}`;
-            quickConfigMappings.textContent = `映射: ${mappings.length} 条规则${mappings.length === 0 ? ' ⚠️' : ''}`;
-            quickConfigData.textContent = `数据: ${notionData.length} 条记录`;
+            quickConfigMappings.textContent = `映射: ${mappings.length} 條規則${mappings.length === 0 ? ' ⚠️' : ''}`;
+            quickConfigData.textContent = `數據: ${notionData.length} 筆紀錄`;
 
             // 6. 启用同步选中按钮（如果有映射）
             if (mappings.length > 0) {
@@ -814,8 +857,8 @@
               addLog('✅ 配置加载完成，可以使用"同步选中"功能', 'success');
             } else {
               btnSyncSelected.disabled = true;
-              setStatus('warning', 'Component 已加载，但未找到映射配置');
-              addLog('提示：请先完成 Step 1-3 创建映射配置', 'info');
+              setStatus('warning', 'Component 已載入，但未搵到映射配置');
+              addLog('提示：請先完成 Step 1-3 建立映射配置', 'info');
             }
 
           } catch (e) {
@@ -891,6 +934,39 @@
       newIdInput.oninput = () => {
         btnUpdateInstanceId.disabled = !newIdInput.value.trim();
       };
+
+      // Relink Instances
+      const btnRelink = document.getElementById('btn-relink');
+      const relinkLayerSelect = document.getElementById('relink-layer-select');
+      const relinkFieldSelect = document.getElementById('relink-field-select');
+
+      if (btnRelink) {
+        btnRelink.onclick = () => {
+          if (!notionData || notionData.length === 0) {
+            setStatus('error', '請先拉取 Notion 數據');
+            return;
+          }
+
+          const layerName = relinkLayerSelect.value;
+          const dataField = relinkFieldSelect.value;
+
+          if (!layerName || !dataField) {
+            setStatus('error', '請選擇匹配規則');
+            return;
+          }
+
+          parent.postMessage({
+            pluginMessage: {
+              type: 'relink-instances',
+              layerName,
+              dataField,
+              notionData,
+              idField: idFieldSelect.value
+            }
+          }, '*');
+          setStatus('loading', '正在重新關聯物件...');
+        };
+      }
 
 
       function extractArray(obj) {
@@ -1160,7 +1236,7 @@
                 const oldImageData = currentImages[m.layerName]; // Get existing data for this layer
                 let oldUrl = '';
                 let oldSize = 0;
-                
+
                 // 兼容舊版數據 (字串) 或新版數據 (物件)
                 if (typeof oldImageData === 'string') {
                   oldUrl = oldImageData;
@@ -1189,12 +1265,12 @@
                       const checkResp = await fetch(newUrl, { method: 'GET', signal: controller.signal });
                       const newSize = parseInt(checkResp.headers.get('content-length') || '0', 10);
                       controller.abort();
-                      
+
                       if (newSize > 0 && newSize === oldSize) {
-                         skipDownload = true;
-                         console.log(`${progressPrefix}   → 跳过（URL相同且容量一致: ${oldSize} bytes）`);
+                        skipDownload = true;
+                        console.log(`${progressPrefix}   → 跳过（URL相同且容量一致: ${oldSize} bytes）`);
                       } else {
-                         console.log(`${progressPrefix}   → 圖片已更換！(容量改變: 舊 ${oldSize} bytes -> 新 ${newSize} bytes)，將重新下載`);
+                        console.log(`${progressPrefix}   → 圖片已更換！(容量改變: 舊 ${oldSize} bytes -> 新 ${newSize} bytes)，將重新下載`);
                       }
                     } catch (e) {
                       console.warn(`${progressPrefix}   → 檢查容量大小失敗，將自動重新下載:`, e);
@@ -1203,7 +1279,7 @@
                     console.log(`${progressPrefix}   → 缺乏舊圖片的容量紀錄，將重新下載以更新紀錄`);
                   }
                 }
-                
+
                 if (skipDownload) {
                   skippedSame++;
                   continue; // SKIP DOWNLOAD
@@ -1357,7 +1433,7 @@
 
 
       // --- Message Handler ---
-      window.onmessage = (event) => {
+      window.onmessage = async (event) => {
         try {
           const msg = event.data.pluginMessage;
           console.log('Frontend received message:', msg);
@@ -1375,6 +1451,7 @@
             currentComponentId = msg.componentId;
             currentTemplateId = msg.actualTemplateId || msg.componentId;
             componentLayers = msg.layers;
+            componentVariants = msg.variants || [];
 
             // 保存选中的 Component ID，下次自动恢复
             saveStorage('last_component_id', currentComponentId);
@@ -1382,10 +1459,21 @@
 
             // Try to load saved mappings for this component
             setStatus('loading', '正在讀取儲存的映射設定...');
-            loadStorage('mapping_' + currentComponentId);
+            let savedData = await loadStorage('mapping_' + currentComponentId);
+
+            // FALLBACK: If not found, try specific variant ID
+            if (!savedData && currentTemplateId !== currentComponentId) {
+              console.log('[Fallback] 嘗試讀取實例 ID 配置:', currentTemplateId);
+              const fallback = await loadStorage('mapping_' + currentTemplateId);
+              if (fallback) {
+                savedData = fallback;
+                addLog('⚠️ 偵測到舊版 Variant 配置，已自動恢復', 'warning');
+              }
+            }
 
             try {
-              renderMappingUI(componentLayers);
+              renderMappingUI(componentLayers, savedData);
+              if (savedData) setStatus('success', '已自動套用映射設定');
             } catch (e) {
               console.error('Render UI Error:', e);
               setStatus('error', '渲染介面失敗: ' + e.message);
@@ -1395,24 +1483,24 @@
             document.getElementById('selected-comp-info').classList.remove('hidden');
 
             if (componentLayers.length === 0) {
-              setStatus('error', '未找到名稱含 # 的圖層 (請檢查圖層名稱)');
+              const errMsg = '未找到名稱含 # 的圖層 (請檢查 Component 內的圖層名稱是否帶有 # 前綴)';
+              setStatus('error', errMsg);
+              addLog(`❌ ${errMsg}`, 'error');
+              addLog('提示：如果呢個係舊物件，請試吓選取原始 Component 重新設定映射。', 'info');
               btnSync.disabled = true;
             } else {
               setStatus('success', '已讀取 Component，請設定映射');
-              console.log('Enabling Sync button manually from code');
-              btnSync.removeAttribute('disabled'); // Ensure attribute is gone
               btnSync.disabled = false;
-
-              // Try to load saved mappings for this component
-              setStatus('loading', '正在讀取儲存的映射設定...');
-              loadStorage('mapping_' + currentComponentId);
             }
             showStep(3);
+            updateRelinkSelectors(); // Update relink selectors when component is loaded
+            renderVariantUI(); // [New] Render variant selection if applicable
           }
           else if (msg.type === 'component-layers') {
             // 处理「读取选中的 Component」返回的数据
             console.log('Processing component-layers...');
             componentLayers = msg.layers;
+            componentVariants = msg.variants || [];
             currentComponentId = msg.componentId;
             currentTemplateId = msg.actualTemplateId || msg.componentId;
 
@@ -1420,8 +1508,22 @@
             saveStorage('last_component_id', currentComponentId);
             console.log('[存储] 已保存 Component ID:', currentComponentId);
 
+            // Try to load saved mappings
+            setStatus('loading', '正在讀取儲存的映射設定...');
+            let savedData = await loadStorage('mapping_' + currentComponentId);
+
+            if (!savedData && currentTemplateId !== currentComponentId) {
+              console.log('[Fallback] 嘗試讀取實例 ID 配置:', currentTemplateId);
+              const fallback = await loadStorage('mapping_' + currentTemplateId);
+              if (fallback) {
+                savedData = fallback;
+                addLog('⚠️ 偵測到舊版 Variant 配置，已自動恢復', 'warning');
+              }
+            }
+
             try {
-              renderMappingUI(componentLayers);
+              renderMappingUI(componentLayers, savedData);
+              if (savedData) setStatus('success', '已自動套用映射設定');
             } catch (e) {
               console.error('Render UI Error:', e);
               setStatus('error', '渲染介面失敗: ' + e.message);
@@ -1431,7 +1533,10 @@
             document.getElementById('selected-comp-info').classList.remove('hidden');
 
             if (componentLayers.length === 0) {
-              setStatus('error', '未找到名稱含 # 的圖層 (請檢查圖層名稱)');
+              const errMsg = '未找到名稱含 # 的圖層 (請檢查 Component 內的圖層名稱是否帶有 # 前綴)';
+              setStatus('error', errMsg);
+              addLog(`❌ ${errMsg}`, 'error');
+              addLog('提示：如果呢個係舊物件，請試吓選取原始 Component 重新設定映射。', 'info');
               btnSync.disabled = true;
             } else {
               setStatus('success', '已讀取 Component，請設定映射');
@@ -1442,6 +1547,8 @@
               loadStorage('mapping_' + currentComponentId);
             }
             showStep(3);
+            updateRelinkSelectors(); // Update relink selectors when component is loaded
+            renderVariantUI(); // [New] Render variant selection if applicable
           }
           else if (msg.type === 'status') {
             setStatus('loading', msg.message);
@@ -1543,11 +1650,7 @@
               }
             }
 
-            if (msg.key === `mapping_${currentComponentId}` && msg.value) {
-              console.log('Loaded saved mappings:', msg.value);
-              renderMappingUI(componentLayers, msg.value);
-              setStatus('success', '已自動套用上次的映射設定');
-            }
+            // Removed redundant individual mapping data handler as it's now awaited in component handlers
           }
         } catch (err) {
           console.error('Window onmessage error:', err);
@@ -1634,6 +1737,50 @@
         });
       }
 
+      function updateRelinkSelectors() {
+        const relinkLayerSelect = document.getElementById('relink-layer-select');
+        const relinkFieldSelect = document.getElementById('relink-field-select');
+
+        if (relinkLayerSelect) {
+          relinkLayerSelect.innerHTML = '';
+          componentLayers.filter(l => l.type === 'TEXT').forEach(l => {
+            const opt = document.createElement('option');
+            opt.value = l.name;
+            opt.textContent = l.name;
+            relinkLayerSelect.appendChild(opt);
+          });
+        }
+
+        if (relinkFieldSelect) {
+          relinkFieldSelect.innerHTML = '';
+          schemaKeys.forEach(k => {
+            const opt = document.createElement('option');
+            opt.value = k;
+            opt.textContent = k;
+            relinkFieldSelect.appendChild(opt);
+          });
+        }
+      }
+
+      function renderVariantUI() {
+        const variantContainer = document.getElementById('variant-selection');
+        const variantSelect = document.getElementById('variant-select');
+
+        if (componentVariants && componentVariants.length > 0) {
+          variantContainer.classList.remove('hidden');
+          variantSelect.innerHTML = '';
+
+          componentVariants.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.id;
+            opt.textContent = v.name;
+            variantSelect.appendChild(opt);
+          });
+        } else {
+          variantContainer.classList.add('hidden');
+        }
+      }
+
       // Step 4: Sync
       btnSync.onclick = () => {
         try {
@@ -1683,11 +1830,14 @@
           const btnAgain = document.getElementById('btn-sync-again');
           if (btnAgain) btnAgain.classList.add('hidden');
 
+          const selectedVariantId = document.getElementById('variant-select').value;
+
           parent.postMessage({
             pluginMessage: {
               type: 'sync-mapped-data',
               componentId: currentComponentId,
               templateId: currentTemplateId,
+              selectedVariantId,
               data: notionData,
               mappings,
               idField
